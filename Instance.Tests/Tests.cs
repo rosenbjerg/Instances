@@ -55,6 +55,15 @@ namespace Instance.Tests
             Assert.IsTrue(dataReceived);
         }
         [Test]
+        public void SecondErrorTest()
+        {
+            var instance = new Instances.Instance("dotnet", "run --project Nopes");
+            
+            instance.FinishedRunning().Wait();
+            
+            Assert.IsTrue(instance.ErrorData.First() == "The build failed. Fix the build errors and run again.");
+        }
+        [Test]
         public void BasicErrorTest()
         {
             var instance = new Instances.Instance("dotnet", "run --project Nopes");
