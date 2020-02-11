@@ -12,25 +12,25 @@ namespace Instance.Tests
         public void PublishesExitedEventOnError()
         {
             var instance = new Instances.Instance("dotnet", "run --project Nopes");
-            var completionSource = new TaskCompletionSource<bool>();
-            instance.Exited += (sender, args) => completionSource.TrySetResult(true);
+            var completionSource = new TaskCompletionSource<int>();
+            instance.Exited += (sender, args) => completionSource.TrySetResult(args);
 
             instance.Started = true;
             var result = completionSource.Task.Result;
             
-            Assert.IsTrue(result);
+            Assert.AreEqual(1, result);
         }
         [Test]
         public void PublishesExitedEventOnSuccess()
         {
             var instance = new Instances.Instance("dotnet", "--list-runtimes");
-            var completionSource = new TaskCompletionSource<bool>();
-            instance.Exited += (sender, args) => completionSource.TrySetResult(true);
+            var completionSource = new TaskCompletionSource<int>();
+            instance.Exited += (sender, args) => completionSource.TrySetResult(args);
 
             instance.Started = true;
             var result = completionSource.Task.Result;
             
-            Assert.IsTrue(result);
+            Assert.AreEqual(0, result);
         }
         [Test]
         public void PublishesErrorEvents()
@@ -68,8 +68,9 @@ namespace Instance.Tests
         {
             var instance = new Instances.Instance("dotnet", "run --project Nopes");
             
-            instance.FinishedRunning().Wait();
+            var exitCode = instance.FinishedRunning().Result;
             
+            Assert.AreEqual(1, exitCode);
             Assert.IsNotEmpty(string.Join("\n", instance.ErrorData));
         }
         [Test]
@@ -77,8 +78,9 @@ namespace Instance.Tests
         {
             var instance = new Instances.Instance("dotnet", "--info");
             
-            instance.FinishedRunning().Wait();
+            var exitCode = instance.FinishedRunning().Result;
             
+            Assert.AreEqual(0, exitCode);
             Assert.IsTrue(instance.OutputData.First().StartsWith(".NET Core"));
         }
         [Test]

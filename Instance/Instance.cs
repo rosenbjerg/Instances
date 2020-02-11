@@ -84,14 +84,14 @@ namespace Instances
                 _started = _process.Start();
                 _process.BeginOutputReadLine();
                 _process.BeginErrorReadLine();
-                if (!_started) Exited?.Invoke(this, EventArgs.Empty);
+                if (!_started) Exited?.Invoke(this, _process.ExitCode);
             }
             catch (Exception e)
             {
                 AddData(_errorData, e.Message, DataType.Error, DataBufferCapacity, IgnoreEmptyLines, DataReceived, _stderrTask.TrySetResult, ExitReceived);
                 _started = false;
                 _stderrTask.TrySetResult(true);
-                Exited?.Invoke(this, EventArgs.Empty);
+                Exited?.Invoke(this, _process.ExitCode);
             }
         }
 
@@ -115,14 +115,14 @@ namespace Instances
             {
                 _process.Kill();
                 _started = false;
-                Exited?.Invoke(this, EventArgs.Empty);
+                Exited?.Invoke(this, _process.ExitCode);
             }
         }
 
-        public event EventHandler Exited;
+        public event EventHandler<int> Exited;
         public event EventHandler<(DataType Type, string Data)> DataReceived;
 
-        public async Task FinishedRunning()
+        public async Task<int> FinishedRunning()
         {
             if (!_started) Started = true;
             await Task.WhenAny(new Task[]
@@ -130,6 +130,7 @@ namespace Instances
                 _stdoutTask.Task,
                 _stderrTask.Task
             }).ConfigureAwait(false);
+            return _process.ExitCode;
         }
 
         
@@ -142,7 +143,7 @@ namespace Instances
         private void ExitReceived()
         {
             _started = false;
-            Exited?.Invoke(this, EventArgs.Empty);
+            Exited?.Invoke(this, _process.ExitCode);
         }
         
         private static void AddData(Stack<string> dataList, string? data, DataType type, int capacity, bool ignoreEmpty,
