@@ -11,11 +11,12 @@
         <Authors>Malte Rosenbjerg</Authors>
         <Description>A process wrapper for asyncronous use, using Tasks or Events</Description>
         <Copyright>Rosenbjerg Softworks</Copyright>
-        <PackageProjectUrl>https://github.com/rosenbjerg/Instance</PackageProjectUrl>
-        <PackageTags>First release</PackageTags>
+        <PackageProjectUrl>https://github.com/rosenbjerg/Instances</PackageProjectUrl>
+        <PackageTags>instances instance process async task events</PackageTags>
         <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
         <PackageVersion>1.1.0</PackageVersion>
         <PackageReleaseNotes>Add ExitCode to Exited event</PackageReleaseNotes>
+        <RepositoryUrl>https://github.com/rosenbjerg/Instances</RepositoryUrl>
     </PropertyGroup>
 
 </Project>
