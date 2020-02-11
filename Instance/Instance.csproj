@@ -1,0 +1,19 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>netstandard2.0</TargetFramework>
+        <RootNamespace>Instances</RootNamespace>
+        <AssemblyName>Instances</AssemblyName>
+        <LangVersion>8</LangVersion>
+        <Nullable>enable</Nullable>
+        <PackageId>Instances</PackageId>
+        <Title>Instances</Title>
+        <Authors>Malte Rosenbjerg</Authors>
+        <Description>A process wrapper for asyncronous use, using Tasks or Events</Description>
+        <Copyright>Rosenbjerg Softworks</Copyright>
+        <PackageProjectUrl>https://github.com/rosenbjerg/Instance</PackageProjectUrl>
+        <PackageTags>First release</PackageTags>
+        <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    </PropertyGroup>
+
+</Project>
