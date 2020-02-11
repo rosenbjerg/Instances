@@ -14,8 +14,8 @@
         <PackageProjectUrl>https://github.com/rosenbjerg/Instances</PackageProjectUrl>
         <PackageTags>instances instance process async task events</PackageTags>
         <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-        <PackageVersion>1.1.0</PackageVersion>
-        <PackageReleaseNotes>Add ExitCode to Exited event</PackageReleaseNotes>
+        <PackageVersion>1.2.0</PackageVersion>
+        <PackageReleaseNotes>Adds BlockingWait method to wait synchronously</PackageReleaseNotes>
         <RepositoryUrl>https://github.com/rosenbjerg/Instances</RepositoryUrl>
     </PropertyGroup>
 

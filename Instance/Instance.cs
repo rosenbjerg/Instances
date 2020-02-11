@@ -133,6 +133,11 @@ namespace Instances
             return _process.ExitCode;
         }
 
+        public void BlockingWait()
+        {
+            _process?.WaitForExit();
+        }
+
         
         private void ReceiveOutput(object _, DataReceivedEventArgs e) => AddData(_outputData, e.Data, DataType.Output,
             DataBufferCapacity, IgnoreEmptyLines, DataReceived, _stdoutTask.TrySetResult, ExitReceived);
