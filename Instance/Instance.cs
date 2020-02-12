@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Instances
 {
-    public class Instance
+    public class Instance : IDisposable
     {
         private readonly ProcessStartInfo _startInfo;
 
@@ -97,6 +97,7 @@ namespace Instances
 
         private void InitializeProcess()
         {
+            _process?.Dispose();
             _process = new Process
             {
                 StartInfo = _startInfo,
@@ -170,6 +171,11 @@ namespace Instances
                 dataList.PopMultiple(dataList.Count - capacity);
                 dataTrigger?.Invoke(null, (type, data));
             }
+        }
+
+        public void Dispose()
+        {
+            _process.Dispose();
         }
     }
 }
