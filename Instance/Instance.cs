@@ -67,9 +67,10 @@ namespace Instances
                     _started = value;
                     _stdoutTask = new TaskCompletionSource<bool>();
                     _stderrTask = new TaskCompletionSource<bool>();
+                    InitializeProcess();
                 }
 
-                if (value) Task.Run(StartProcess);
+                if (value) StartProcess();
                 else StopProcess();
             }
         }
@@ -77,7 +78,6 @@ namespace Instances
         private void StartProcess()
         {
             _started = true;
-            if (_process == default) InitializeProcess();
 
             try
             {
@@ -130,14 +130,18 @@ namespace Instances
                 _stdoutTask.Task,
                 _stderrTask.Task
             }).ConfigureAwait(false);
+            _started = false;
             return _process.ExitCode;
         }
 
-        public void BlockingWait()
+        public int BlockUntilFinished()
         {
-            _process?.WaitForExit();
+            if (!_started) Started = true;
+            if (_process == null) return 0;
+            _process.WaitForExit();
+            _started = false;
+            return _process.ExitCode;
         }
-
         
         private void ReceiveOutput(object _, DataReceivedEventArgs e) => AddData(_outputData, e.Data, DataType.Output,
             DataBufferCapacity, IgnoreEmptyLines, DataReceived, _stdoutTask.TrySetResult, ExitReceived);

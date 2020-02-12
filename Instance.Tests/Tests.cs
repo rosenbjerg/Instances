@@ -92,5 +92,21 @@ namespace Instance.Tests
             
             Assert.IsNotEmpty(string.Join("\n", instance.OutputData));
         }
+        [Test]
+        public void RestartTest()
+        {
+            var instance = new Instances.Instance("dotnet", "--info");
+            
+            var exitCode = instance.FinishedRunning().Result;
+            
+            Assert.AreEqual(0, exitCode);
+            Assert.IsTrue(instance.OutputData.First().StartsWith(".NET Core"));
+            
+            var exitCode2 = instance.BlockUntilFinished();
+            
+            Assert.AreEqual(0, exitCode2);
+            Assert.IsTrue(instance.OutputData.First().StartsWith(".NET Core"));
+            
+        }
     }
 }
