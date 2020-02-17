@@ -14,8 +14,8 @@
         <PackageProjectUrl>https://github.com/rosenbjerg/Instances</PackageProjectUrl>
         <PackageTags>instances instance process async task events</PackageTags>
         <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-        <PackageVersion>1.3.1</PackageVersion>
-        <PackageReleaseNotes>Make IDisposable</PackageReleaseNotes>
+        <PackageVersion>1.3.3</PackageVersion>
+        <PackageReleaseNotes>Add public Stop method</PackageReleaseNotes>
         <RepositoryUrl>https://github.com/rosenbjerg/Instances</RepositoryUrl>
     </PropertyGroup>
 

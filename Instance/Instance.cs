@@ -67,17 +67,17 @@ namespace Instances
                     _started = value;
                     _stdoutTask = new TaskCompletionSource<bool>();
                     _stderrTask = new TaskCompletionSource<bool>();
-                    InitializeProcess();
                 }
 
                 if (value) StartProcess();
-                else StopProcess();
+                else Stop();
             }
         }
 
         private void StartProcess()
         {
             _started = true;
+            InitializeProcess();
 
             try
             {
@@ -110,7 +110,7 @@ namespace Instances
             _process.ErrorDataReceived += ReceiveError;
         }
 
-        private void StopProcess()
+        public void Stop()
         {
             if (_process != default && !_process.HasExited)
             {
