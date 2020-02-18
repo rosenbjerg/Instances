@@ -16,7 +16,7 @@ namespace Instance.Tests
             var completionSource = new TaskCompletionSource<int>();
             instance.Exited += (sender, args) => completionSource.TrySetResult(args);
 
-            instance.Start();
+            instance.Started = true;
             var result = completionSource.Task.Result;
             
             Assert.AreEqual(1, result);
@@ -28,7 +28,7 @@ namespace Instance.Tests
             var completionSource = new TaskCompletionSource<int>();
             instance.Exited += (sender, args) => completionSource.TrySetResult(args);
 
-            instance.Start();
+            instance.Started = true;
             var result = completionSource.Task.Result;
             
             Assert.AreEqual(0, result);

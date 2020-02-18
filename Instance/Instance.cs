@@ -17,6 +17,7 @@ namespace Instances
 
         private readonly Stack<string> _outputData = new Stack<string>();
         private readonly Stack<string> _errorData = new Stack<string>();
+        private bool _started;
 
         public Instance(ProcessStartInfo startInfo)
         {
@@ -46,18 +47,29 @@ namespace Instances
         public bool IgnoreEmptyLines { get; set; } = true;
         public int DataBufferCapacity { get; set; } = 100;
 
-        public bool Started { get; private set; }
-
-        public void Start()
+        public bool Started
         {
-            if (Started) throw new Exception("Instance has already been started!");
+            get => _started;
+            set
+            {
+                if (_started && value) throw new InstanceException("Instance has already been started!");
+                if (!_started && !value) throw new InstanceException("Instance is not running!");
+                
+                if (value) Start();
+                else _process?.Kill();
+            }
+        }
+
+        private void Start()
+        {
+            if (_started) throw new InstanceException("Instance has already been started!");
             _mainTask = new TaskCompletionSource<bool>();
             _stdoutTask = new TaskCompletionSource<bool>();
             _stderrTask = new TaskCompletionSource<bool>();
             
             InitializeProcess();
 
-            Started = true;
+            _started = true;
             _process.Start();
             _process.BeginOutputReadLine();
             _process.BeginErrorReadLine();
@@ -94,17 +106,15 @@ namespace Instances
 
         public async Task<int> FinishedRunning()
         {
-            if (!Started) Start();
+            if (!_started) Started = true;
             await _mainTask.Task.ConfigureAwait(false);
             return _process.ExitCode;
         }
 
         public int BlockUntilFinished()
         {
-            if (!Started) Start();
-            if (_process == null) return 0;
+            if (!_started) Started = true;
             _process.WaitForExit();
-            Started = false;
             return _process.ExitCode;
         }
         
