@@ -16,7 +16,7 @@ namespace Instance.Tests
             var completionSource = new TaskCompletionSource<int>();
             instance.Exited += (sender, args) => completionSource.TrySetResult(args);
 
-            instance.Started = true;
+            instance.Start();
             var result = completionSource.Task.Result;
             
             Assert.AreEqual(1, result);
@@ -28,7 +28,7 @@ namespace Instance.Tests
             var completionSource = new TaskCompletionSource<int>();
             instance.Exited += (sender, args) => completionSource.TrySetResult(args);
 
-            instance.Started = true;
+            instance.Start();
             var result = completionSource.Task.Result;
             
             Assert.AreEqual(0, result);
@@ -98,12 +98,12 @@ namespace Instance.Tests
         {
             var instance = new Instances.Instance("dotnet", "--info");
             
-            var exitCode = instance.FinishedRunning().Result;
+            var exitCode = instance.BlockUntilFinished();
             
             Assert.AreEqual(0, exitCode);
             Assert.IsTrue(instance.OutputData.First().StartsWith(".NET Core"));
             
-            var exitCode2 = instance.BlockUntilFinished();
+            var exitCode2 = instance.FinishedRunning().Result;
             
             Assert.AreEqual(0, exitCode2);
             Assert.IsTrue(instance.OutputData.First().StartsWith(".NET Core"));
