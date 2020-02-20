@@ -108,6 +108,34 @@ namespace Instance.Tests
             Assert.AreEqual(0, exitCode2);
             Assert.IsTrue(instance.OutputData.First().StartsWith(".NET Core"));
             
+            var exitCode3 = instance.BlockUntilFinished();
+            
+            Assert.AreEqual(0, exitCode3);
+            Assert.IsTrue(instance.OutputData.First().StartsWith(".NET Core"));
+            
+            var exitCode4 = instance.FinishedRunning().Result;
+            
+            Assert.AreEqual(0, exitCode4);
+            Assert.IsTrue(instance.OutputData.First().StartsWith(".NET Core"));
+            
+        }
+        [Test]
+        public void StaticAsyncTest()
+        {
+            var (exitCode, instance) = Instances.Instance.FinishAsync("dotnet", "--info").Result;
+            
+            Assert.AreEqual(0, exitCode);
+            Assert.IsTrue(instance.OutputData.First().StartsWith(".NET Core"));
+            
+        }
+        [Test]
+        public void StaticSyncTest()
+        {
+            var (exitCode, instance) = Instances.Instance.Finish("dotnet", "--info");
+            
+            Assert.AreEqual(0, exitCode);
+            Assert.IsTrue(instance.OutputData.First().StartsWith(".NET Core"));
+            
         }
     }
 }

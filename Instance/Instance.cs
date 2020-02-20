@@ -8,6 +8,32 @@ namespace Instances
 {
     public class Instance : IDisposable
     {
+        public static (int exitCode, Instance instance) Finish(string path, string arguments = "", EventHandler<(DataType Type, string Data)> outputHandler = default)
+        {
+            return Finish(new ProcessStartInfo {FileName = path, Arguments = arguments}, outputHandler);
+        }
+
+        public static (int exitCode, Instance instance) Finish(ProcessStartInfo startInfo, EventHandler<(DataType Type, string Data)> outputHandler = default)
+        {
+            var instance = new Instance(startInfo);
+            if (outputHandler != default) instance.DataReceived += outputHandler; 
+            var exitCode = instance.BlockUntilFinished();
+            return (exitCode, instance);
+        }
+
+        public static Task<(int exitCode, Instance instance)> FinishAsync(string path, string arguments = "", EventHandler<(DataType Type, string Data)> outputHandler = default)
+        {
+            return FinishAsync(new ProcessStartInfo {FileName = path, Arguments = arguments}, outputHandler);
+        }
+
+        public static async Task<(int exitCode, Instance instance)> FinishAsync(ProcessStartInfo startInfo, EventHandler<(DataType Type, string Data)> outputHandler = default)
+        {
+            var instance = new Instance(startInfo);
+            if (outputHandler != default) instance.DataReceived += outputHandler; 
+            var exitCode = await instance.FinishedRunning();
+            return (exitCode, instance);
+        }
+
         private readonly ProcessStartInfo _startInfo;
 
         private Process _process;
@@ -24,9 +50,9 @@ namespace Instances
             _startInfo = startInfo;
         }
 
-        public Instance(string path, string arguments = "")
+        public Instance(string path, string arguments = "") : this(new ProcessStartInfo
+            {FileName = path, Arguments = arguments})
         {
-            _startInfo = new ProcessStartInfo {FileName = path, Arguments = arguments};
         }
 
         public IReadOnlyList<string> OutputData => _outputData.Reverse().ToList().AsReadOnly();
@@ -40,7 +66,8 @@ namespace Instances
             }
             catch (Exception e)
             {
-                AddData(_errorData, e.Message, DataType.Error, DataBufferCapacity, IgnoreEmptyLines, DataReceived, _stdoutTask.TrySetResult);
+                AddData(_errorData, e.Message, DataType.Error, DataBufferCapacity, IgnoreEmptyLines, DataReceived,
+                    _stdoutTask.TrySetResult);
             }
         }
 
@@ -54,7 +81,7 @@ namespace Instances
             {
                 if (_started && value) throw new InstanceException("Instance has already been started!");
                 if (!_started && !value) throw new InstanceException("Instance is not running!");
-                
+
                 if (value) Start();
                 else _process?.Kill();
             }
@@ -63,10 +90,13 @@ namespace Instances
         private void Start()
         {
             if (_started) throw new InstanceException("Instance has already been started!");
+            
+            _outputData.Clear();
+            _errorData.Clear();
             _mainTask = new TaskCompletionSource<bool>();
             _stdoutTask = new TaskCompletionSource<bool>();
             _stderrTask = new TaskCompletionSource<bool>();
-            
+
             InitializeProcess();
 
             _started = true;
@@ -117,13 +147,13 @@ namespace Instances
             _process.WaitForExit();
             return _process.ExitCode;
         }
-        
+
         private void ReceiveOutput(object _, DataReceivedEventArgs e) => AddData(_outputData, e.Data, DataType.Output,
             DataBufferCapacity, IgnoreEmptyLines, DataReceived, _stdoutTask.TrySetResult);
 
         private void ReceiveError(object _, DataReceivedEventArgs e) => AddData(_errorData, e.Data, DataType.Error,
             DataBufferCapacity, IgnoreEmptyLines, DataReceived, _stderrTask.TrySetResult);
-        
+
         private static void AddData(Stack<string> dataList, string? data, DataType type, int capacity, bool ignoreEmpty,
             EventHandler<(DataType Type, string Data)> dataTrigger, Func<bool, bool> nullTrigger)
         {
