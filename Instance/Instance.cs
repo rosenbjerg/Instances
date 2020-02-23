@@ -41,8 +41,8 @@ namespace Instances
         private TaskCompletionSource<bool> _stdoutTask;
         private TaskCompletionSource<bool> _stderrTask;
 
-        private readonly Stack<string> _outputData = new Stack<string>();
-        private readonly Stack<string> _errorData = new Stack<string>();
+        private readonly Queue<string> _outputData = new Queue<string>();
+        private readonly Queue<string> _errorData = new Queue<string>();
         private bool _started;
 
         public Instance(ProcessStartInfo startInfo)
@@ -55,8 +55,8 @@ namespace Instances
         {
         }
 
-        public IReadOnlyList<string> OutputData => _outputData.Reverse().ToList().AsReadOnly();
-        public IReadOnlyList<string> ErrorData => _errorData.Reverse().ToList().AsReadOnly();
+        public IReadOnlyList<string> OutputData => _outputData.ToList().AsReadOnly();
+        public IReadOnlyList<string> ErrorData => _errorData.ToList().AsReadOnly();
 
         public async Task SendInput(string input)
         {
@@ -154,7 +154,7 @@ namespace Instances
         private void ReceiveError(object _, DataReceivedEventArgs e) => AddData(_errorData, e.Data, DataType.Error,
             DataBufferCapacity, IgnoreEmptyLines, DataReceived, _stderrTask.TrySetResult);
 
-        private static void AddData(Stack<string> dataList, string? data, DataType type, int capacity, bool ignoreEmpty,
+        private static void AddData(Queue<string> dataList, string? data, DataType type, int capacity, bool ignoreEmpty,
             EventHandler<(DataType Type, string Data)> dataTrigger, Func<bool, bool> nullTrigger)
         {
             if (data == null)
@@ -164,8 +164,8 @@ namespace Instances
             else
             {
                 if (ignoreEmpty && data == "") return;
-                dataList.Push(data);
-                dataList.PopMultiple(dataList.Count - capacity);
+                dataList.Enqueue(data);
+                dataList.DequeueMultiple(dataList.Count - capacity);
                 dataTrigger?.Invoke(null, (type, data));
             }
         }
