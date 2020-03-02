@@ -83,6 +83,7 @@ namespace Instance.Tests
             
             Assert.AreEqual(0, exitCode);
             Assert.IsTrue(instance.OutputData.First().StartsWith(".NET Core"));
+            Assert.IsTrue(!instance.ErrorData.Any());
         }
         [Test]
         public void BasicOutputTest()
@@ -92,6 +93,7 @@ namespace Instance.Tests
             instance.FinishedRunning().Wait();
             
             Assert.IsNotEmpty(string.Join("\n", instance.OutputData));
+            Assert.IsTrue(!instance.ErrorData.Any());
         }
         [Test]
         public void RestartTest()
