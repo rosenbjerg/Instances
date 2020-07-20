@@ -8,12 +8,12 @@ namespace Instances
 {
     public class Instance : IDisposable
     {
-        public static (int exitCode, Instance instance) Finish(string path, string arguments = "", EventHandler<(DataType Type, string Data)> outputHandler = default)
+        public static (int exitCode, Instance instance) Finish(string path, string arguments = "", EventHandler<(DataType Type, string Data)>? outputHandler = default)
         {
             return Finish(new ProcessStartInfo {FileName = path, Arguments = arguments}, outputHandler);
         }
 
-        public static (int exitCode, Instance instance) Finish(ProcessStartInfo startInfo, EventHandler<(DataType Type, string Data)> outputHandler = default)
+        public static (int exitCode, Instance instance) Finish(ProcessStartInfo startInfo, EventHandler<(DataType Type, string Data)>? outputHandler = default)
         {
             var instance = new Instance(startInfo);
             if (outputHandler != default) instance.DataReceived += outputHandler; 
@@ -21,12 +21,12 @@ namespace Instances
             return (exitCode, instance);
         }
 
-        public static Task<(int exitCode, Instance instance)> FinishAsync(string path, string arguments = "", EventHandler<(DataType Type, string Data)> outputHandler = default)
+        public static Task<(int exitCode, Instance instance)> FinishAsync(string path, string arguments = "", EventHandler<(DataType Type, string Data)>? outputHandler = default)
         {
             return FinishAsync(new ProcessStartInfo {FileName = path, Arguments = arguments}, outputHandler);
         }
 
-        public static async Task<(int exitCode, Instance instance)> FinishAsync(ProcessStartInfo startInfo, EventHandler<(DataType Type, string Data)> outputHandler = default)
+        public static async Task<(int exitCode, Instance instance)> FinishAsync(ProcessStartInfo startInfo, EventHandler<(DataType Type, string Data)>? outputHandler = default)
         {
             var instance = new Instance(startInfo);
             if (outputHandler != default) instance.DataReceived += outputHandler; 
@@ -34,12 +34,12 @@ namespace Instances
             return (exitCode, instance);
         }
 
-        private readonly ProcessStartInfo _startInfo;
+        private readonly ProcessStartInfo? _startInfo;
 
-        private Process _process;
-        private TaskCompletionSource<bool> _mainTask;
-        private TaskCompletionSource<bool> _stdoutTask;
-        private TaskCompletionSource<bool> _stderrTask;
+        private Process? _process;
+        private TaskCompletionSource<bool>? _mainTask;
+        private TaskCompletionSource<bool>? _stdoutTask;
+        private TaskCompletionSource<bool>? _stderrTask;
 
         private readonly Queue<string> _outputData = new Queue<string>();
         private readonly Queue<string> _errorData = new Queue<string>();
@@ -60,14 +60,16 @@ namespace Instances
 
         public async Task SendInput(string input)
         {
+            if (_process == null) return;
+            
             try
             {
-                await _process.StandardInput.WriteAsync(input!);
+                await _process.StandardInput.WriteAsync(input);
             }
             catch (Exception e)
             {
-                AddData(_errorData, e.Message, DataType.Error, DataBufferCapacity, IgnoreEmptyLines, DataReceived,
-                    _stdoutTask.TrySetResult);
+                AddData(_errorData!, e.Message, DataType.Error, DataBufferCapacity, IgnoreEmptyLines, DataReceived,
+                    _stdoutTask!.TrySetResult);
             }
         }
 
@@ -91,8 +93,8 @@ namespace Instances
         {
             if (_started) throw new InstanceException("Instance has already been started!");
             
-            _outputData.Clear();
-            _errorData.Clear();
+            _outputData!.Clear();
+            _errorData!.Clear();
             _mainTask = new TaskCompletionSource<bool>();
             _stdoutTask = new TaskCompletionSource<bool>();
             _stderrTask = new TaskCompletionSource<bool>();
@@ -100,7 +102,7 @@ namespace Instances
             InitializeProcess();
 
             _started = true;
-            _process.Start();
+            _process!.Start();
             _process.BeginOutputReadLine();
             _process.BeginErrorReadLine();
         }
@@ -110,7 +112,7 @@ namespace Instances
             _process?.Dispose();
             _process = new Process
             {
-                StartInfo = _startInfo,
+                StartInfo = _startInfo ?? new ProcessStartInfo(),
                 EnableRaisingEvents = true
             };
             _process.StartInfo.CreateNoWindow = true;
@@ -125,39 +127,39 @@ namespace Instances
 
         private void ReceiveExit(object sender, EventArgs e)
         {
-            Task.WhenAll(_stdoutTask.Task, _stderrTask.Task).ContinueWith(task =>
+            Task.WhenAll(_stdoutTask!.Task, _stderrTask!.Task).ContinueWith(task =>
             {
                 _started = false;
-                Exited?.Invoke(this, _process.HasExited ? _process.ExitCode : -100);
-                return _mainTask.TrySetResult(true);
+                Exited?.Invoke(this, _process!.HasExited ? _process.ExitCode : -100);
+                return _mainTask!.TrySetResult(true);
             });
         }
 
-        public event EventHandler<int> Exited;
-        public event EventHandler<(DataType Type, string Data)> DataReceived;
+        public event EventHandler<int>? Exited;
+        public event EventHandler<(DataType Type, string Data)>? DataReceived;
 
         public async Task<int> FinishedRunning()
         {
             if (!_started) Started = true;
-            await _mainTask.Task.ConfigureAwait(false);
-            return _process.ExitCode;
+            await _mainTask!.Task.ConfigureAwait(false);
+            return _process!.ExitCode;
         }
 
         public int BlockUntilFinished()
         {
             if (!_started) Started = true;
-            _process.WaitForExit();
+            _process!.WaitForExit();
             return _process.ExitCode;
         }
 
         private void ReceiveOutput(object _, DataReceivedEventArgs e) => AddData(_outputData, e.Data, DataType.Output,
-            DataBufferCapacity, IgnoreEmptyLines, DataReceived, _stdoutTask.TrySetResult);
+            DataBufferCapacity, IgnoreEmptyLines, DataReceived, _stdoutTask!.TrySetResult);
 
         private void ReceiveError(object _, DataReceivedEventArgs e) => AddData(_errorData, e.Data, DataType.Error,
-            DataBufferCapacity, IgnoreEmptyLines, DataReceived, _stderrTask.TrySetResult);
+            DataBufferCapacity, IgnoreEmptyLines, DataReceived, _stderrTask!.TrySetResult);
 
         private static void AddData(Queue<string> dataList, string? data, DataType type, int capacity, bool ignoreEmpty,
-            EventHandler<(DataType Type, string Data)> dataTrigger, Func<bool, bool> nullTrigger)
+            EventHandler<(DataType Type, string Data)>? dataTrigger, Func<bool, bool> nullTrigger)
         {
             if (data == null)
             {
