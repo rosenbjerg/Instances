@@ -12,74 +12,74 @@ namespace Instance.Tests
         [Test]
         public void PublishesExitedEventOnError()
         {
-            var instance = new Instances.Instance("dotnet", "run --project Nopes");
+            using var instance = new Instances.Instance("dotnet", "run --project Nopes");
             var completionSource = new TaskCompletionSource<int>();
             instance.Exited += (sender, args) => completionSource.TrySetResult(args);
 
             instance.Started = true;
-            var result = completionSource.Task.Result;
+            var result = completionSource.Task.GetAwaiter().GetResult();
             
             Assert.AreEqual(1, result);
         }
         [Test]
-        public void PublishesExitedEventOnSuccess()
+        public async Task PublishesExitedEventOnSuccess()
         {
-            var instance = new Instances.Instance("dotnet", "--list-runtimes");
+            using var instance = new Instances.Instance("dotnet", "--list-runtimes");
             var completionSource = new TaskCompletionSource<int>();
             instance.Exited += (sender, args) => completionSource.TrySetResult(args);
 
             instance.Started = true;
-            var result = completionSource.Task.Result;
+            var result = await completionSource.Task;
             
             Assert.AreEqual(0, result);
         }
         [Test]
         public void PublishesErrorEvents()
         {
-            var instance = new Instances.Instance("dotnet", "run --project Nopes");
+            using var instance = new Instances.Instance("dotnet", "run --project Nopes");
             var dataReceived = false;
             instance.DataReceived += (sender, args) => dataReceived = args.Type == DataType.Error;
-            
-            instance.FinishedRunning().Wait();
+
+            instance.BlockUntilFinished();
             
             Assert.IsTrue(dataReceived);
         }
         [Test]
-        public void PublishesDataEvents()
+        public async Task PublishesDataEvents()
         {
-            var instance = new Instances.Instance("dotnet", "--list-runtimes");
+            using var instance = new Instances.Instance("dotnet", "--list-runtimes");
             var dataReceived = false;
             instance.DataReceived += (sender, args) => dataReceived = args.Type == DataType.Output;
             
-            instance.FinishedRunning().Wait();
+            await instance.FinishedRunning();
             
             Assert.IsTrue(dataReceived);
         }
         [Test]
         public void SecondErrorTest()
         {
-            var instance = new Instances.Instance("dotnet", "run --project Nopes");
-            
-            instance.FinishedRunning().Wait();
+            using var instance = new Instances.Instance("dotnet", "run --project Nopes");
+
+            instance.BlockUntilFinished();
             
             Assert.IsTrue(instance.ErrorData.First() == "The build failed. Fix the build errors and run again.");
         }
         [Test]
-        public void BasicErrorTest()
+        public async Task BasicErrorTest()
         {
-            var instance = new Instances.Instance("dotnet", "run --project Nopes");
+            using var instance = new Instances.Instance("dotnet", "run --project Nopes");
             
-            var exitCode = instance.FinishedRunning().Result;
+            var exitCode = await instance.FinishedRunning();
             
             Assert.AreEqual(1, exitCode);
             Assert.IsNotEmpty(string.Join("\n", instance.ErrorData));
         }
         [Test]
-        public void SecondOutputTest()
+        public async Task SecondOutputTest()
         {
-            var instance = new Instances.Instance("dotnet", "--info");
+            using var instance = new Instances.Instance("dotnet", "--info");
             
-            var exitCode = instance.FinishedRunning().Result;
+            var exitCode = await instance.FinishedRunning();
             
             Assert.AreEqual(0, exitCode);
             Assert.IsTrue(instance.OutputData.First().StartsWith(".NET Core"));
@@ -88,24 +88,61 @@ namespace Instance.Tests
         [Test]
         public void BasicOutputTest()
         {
-            var instance = new Instances.Instance("dotnet", "--version");
+            using var instance = new Instances.Instance("dotnet", "--version");
             
-            instance.FinishedRunning().Wait();
+            instance.BlockUntilFinished();
             
             Assert.IsNotEmpty(string.Join("\n", instance.OutputData));
             Assert.IsTrue(!instance.ErrorData.Any());
         }
         [Test]
-        public void RestartTest()
+        public async Task StartedPropertyBehavesCorrectly()
         {
-            var instance = new Instances.Instance("dotnet", "--info");
+            using var instance = new Instances.Instance("dotnet", "--version");
+            Assert.False(instance.Started);
+            var running = instance.FinishedRunning();
+            Assert.True(instance.Started);
+            await running;
+            Assert.False(instance.Started);
+        }
+        [Test]
+        public async Task BufferCapacitiesCapsOutput()
+        {
+            using var instance = new Instances.Instance("dotnet", "--help") { DataBufferCapacity = 3 };
+            await instance.FinishedRunning();
+            Assert.AreEqual(3, instance.OutputData.Count);
+            Assert.IsEmpty(instance.ErrorData);
+        }
+        [Test]
+        public void ThrowsOnDoubleStart()
+        {
+            Assert.Throws<InstanceException>(() =>
+            {
+                using var instance = new Instances.Instance("dotnet", "--version");
+                instance.Started = true;
+                instance.Started = true;
+            });
+        }
+        [Test]
+        public void ThrowsOnPreemptiveStop()
+        {
+            Assert.Throws<InstanceException>(() =>
+            {
+                using var instance = new Instances.Instance("dotnet", "--version");
+                instance.Started = false;
+            });
+        }
+        [Test]
+        public async Task RestartTest()
+        {
+            using var instance = new Instances.Instance("dotnet", "--info");
             
             var exitCode = instance.BlockUntilFinished();
             
             Assert.AreEqual(0, exitCode);
             Assert.IsTrue(instance.OutputData.First().StartsWith(".NET Core"));
             
-            var exitCode2 = instance.FinishedRunning().Result;
+            var exitCode2 = await instance.FinishedRunning();
             
             Assert.AreEqual(0, exitCode2);
             Assert.IsTrue(instance.OutputData.First().StartsWith(".NET Core"));
@@ -115,16 +152,16 @@ namespace Instance.Tests
             Assert.AreEqual(0, exitCode3);
             Assert.IsTrue(instance.OutputData.First().StartsWith(".NET Core"));
             
-            var exitCode4 = instance.FinishedRunning().Result;
+            var exitCode4 = await instance.FinishedRunning();
             
             Assert.AreEqual(0, exitCode4);
             Assert.IsTrue(instance.OutputData.First().StartsWith(".NET Core"));
             
         }
         [Test]
-        public void StaticAsyncTest()
+        public async Task StaticAsyncTest()
         {
-            var (exitCode, instance) = Instances.Instance.FinishAsync("dotnet", "--info").Result;
+            var (exitCode, instance) = await Instances.Instance.FinishAsync("dotnet", "--info");
             
             Assert.AreEqual(0, exitCode);
             Assert.IsTrue(instance.OutputData.First().StartsWith(".NET Core"));

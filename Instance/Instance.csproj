@@ -14,8 +14,8 @@
         <PackageProjectUrl>https://github.com/rosenbjerg/Instances</PackageProjectUrl>
         <PackageTags>instances instance process async task events</PackageTags>
         <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-        <PackageVersion>1.5.0</PackageVersion>
-        <PackageReleaseNotes>Add static method and use proper datastructure for output</PackageReleaseNotes>
+        <PackageVersion>1.6.0</PackageVersion>
+        <PackageReleaseNotes>CreateNoWindow is set to true by default</PackageReleaseNotes>
         <RepositoryUrl>https://github.com/rosenbjerg/Instances</RepositoryUrl>
     </PropertyGroup>
 
