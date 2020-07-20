@@ -127,6 +127,7 @@ namespace Instances
         {
             Task.WhenAll(_stdoutTask.Task, _stderrTask.Task).ContinueWith(task =>
             {
+                _started = false;
                 Exited?.Invoke(this, _process.HasExited ? _process.ExitCode : -100);
                 return _mainTask.TrySetResult(true);
             });
@@ -164,16 +165,17 @@ namespace Instances
             }
             else
             {
-                if (ignoreEmpty && data == "") return;
+                if (ignoreEmpty && data == string.Empty) return;
                 dataList.Enqueue(data);
                 dataList.DequeueMultiple(dataList.Count - capacity);
                 dataTrigger?.Invoke(null, (type, data));
             }
         }
 
+        
         public void Dispose()
         {
-            _process.Dispose();
+            _process?.Dispose();
         }
     }
 }
