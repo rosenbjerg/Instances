@@ -129,7 +129,7 @@ namespace Instance.Tests
             var exitCode = await instance.FinishedRunning();
             
             Assert.AreEqual(0, exitCode);
-            Assert.AreEqual("3.1.301", instance.OutputData.First());
+            Assert.IsTrue(instance.OutputData.First().StartsWith("3.1"));
             Assert.IsTrue(!instance.ErrorData.Any());
         }
         [Test]
@@ -206,22 +206,22 @@ namespace Instance.Tests
             var exitCode = instance.BlockUntilFinished();
             
             Assert.AreEqual(0, exitCode);
-            Assert.AreEqual("3.1.301", instance.OutputData.First());
+            Assert.IsTrue(instance.OutputData.First().StartsWith("3.1"));
             
             var exitCode2 = await instance.FinishedRunning();
             
             Assert.AreEqual(0, exitCode2);
-            Assert.AreEqual("3.1.301", instance.OutputData.First());
+            Assert.IsTrue(instance.OutputData.First().StartsWith("3.1"));
             
             var exitCode3 = instance.BlockUntilFinished();
             
             Assert.AreEqual(0, exitCode3);
-            Assert.AreEqual("3.1.301", instance.OutputData.First());
+            Assert.IsTrue(instance.OutputData.First().StartsWith("3.1"));
             
             var exitCode4 = await instance.FinishedRunning();
             
             Assert.AreEqual(0, exitCode4);
-            Assert.AreEqual("3.1.301", instance.OutputData.First());
+            Assert.IsTrue(instance.OutputData.First().StartsWith("3.1"));
         }
     }
 }
