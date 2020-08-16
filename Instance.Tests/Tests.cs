@@ -124,12 +124,12 @@ namespace Instance.Tests
         [Test]
         public async Task SecondOutputTest()
         {
-            using var instance = new Instances.Instance("dotnet", "--info");
+            using var instance = new Instances.Instance("dotnet", "--version");
             
             var exitCode = await instance.FinishedRunning();
             
             Assert.AreEqual(0, exitCode);
-            Assert.IsTrue(instance.OutputData.First().StartsWith(".NET Core"));
+            Assert.AreEqual("3.1.301", instance.OutputData.First());
             Assert.IsTrue(!instance.ErrorData.Any());
         }
         [Test]
@@ -201,43 +201,27 @@ namespace Instance.Tests
         [Test]
         public async Task RestartTest()
         {
-            using var instance = new Instances.Instance("dotnet", "--info");
+            using var instance = new Instances.Instance("dotnet", "--version");
             
             var exitCode = instance.BlockUntilFinished();
             
             Assert.AreEqual(0, exitCode);
-            Assert.IsTrue(instance.OutputData.First().StartsWith(".NET Core"));
+            Assert.AreEqual("3.1.301", instance.OutputData.First());
             
             var exitCode2 = await instance.FinishedRunning();
             
             Assert.AreEqual(0, exitCode2);
-            Assert.IsTrue(instance.OutputData.First().StartsWith(".NET Core"));
+            Assert.AreEqual("3.1.301", instance.OutputData.First());
             
             var exitCode3 = instance.BlockUntilFinished();
             
             Assert.AreEqual(0, exitCode3);
-            Assert.IsTrue(instance.OutputData.First().StartsWith(".NET Core"));
+            Assert.AreEqual("3.1.301", instance.OutputData.First());
             
             var exitCode4 = await instance.FinishedRunning();
             
             Assert.AreEqual(0, exitCode4);
-            Assert.IsTrue(instance.OutputData.First().StartsWith(".NET Core"));
-        }
-        [Test]
-        public async Task StaticAsyncTest()
-        {
-            var (exitCode, instance) = await Instances.Instance.FinishAsync("dotnet", "--info");
-            
-            Assert.AreEqual(0, exitCode);
-            Assert.IsTrue(instance.OutputData.First().StartsWith(".NET Core"));
-        }
-        [Test]
-        public void StaticSyncTest()
-        {
-            var (exitCode, instance) = Instances.Instance.Finish("dotnet", "--info");
-            
-            Assert.AreEqual(0, exitCode);
-            Assert.IsTrue(instance.OutputData.First().StartsWith(".NET Core"));
+            Assert.AreEqual("3.1.301", instance.OutputData.First());
         }
     }
 }
