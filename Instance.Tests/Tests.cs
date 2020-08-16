@@ -1,5 +1,7 @@
 using System;
+using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Instances;
@@ -20,6 +22,38 @@ namespace Instance.Tests
             var result = completionSource.Task.GetAwaiter().GetResult();
             
             Assert.AreEqual(1, result);
+        }
+        [Test]
+        public void StaticFinishSuccessTest()
+        {
+            var outputReceived = false;
+            var (exitCode, _) = Instances.Instance.Finish("dotnet", "--list-runtimes", delegate { outputReceived = true; });
+            Assert.AreEqual(true, outputReceived);
+            Assert.AreEqual(0, exitCode);
+        }
+        [Test]
+        public void StaticFinishErrorTest()
+        {
+            var outputReceived = false;
+            var (exitCode, _) = Instances.Instance.Finish("dotnet", "run --project Nopes", delegate { outputReceived = true; });
+            Assert.AreEqual(true, outputReceived);
+            Assert.AreNotEqual(0, exitCode);
+        }
+        [Test]
+        public async Task AsyncStaticFinishSuccessTest()
+        {
+            var outputReceived = false;
+            var (exitCode, _) = await Instances.Instance.FinishAsync("dotnet", "--list-runtimes", delegate { outputReceived = true; });
+            Assert.AreEqual(true, outputReceived);
+            Assert.AreEqual(0, exitCode);
+        }
+        [Test]
+        public async Task AsyncStaticFinishErrorTest()
+        {
+            var outputReceived = false;
+            var (exitCode, _) = await Instances.Instance.FinishAsync("dotnet", "run --project Nopes", delegate { outputReceived = true; });
+            Assert.AreEqual(true, outputReceived);
+            Assert.AreNotEqual(0, exitCode);
         }
         [Test]
         public async Task PublishesExitedEventOnSuccess()
@@ -54,6 +88,19 @@ namespace Instance.Tests
             await instance.FinishedRunning();
             
             Assert.IsTrue(dataReceived);
+        }
+        [Test]
+        public async Task IgnoreEmptyLinesWork()
+        {
+            using var instance = new Instances.Instance("dotnet", "--help") { IgnoreEmptyLines = false };
+            await instance.FinishedRunning();
+            var linesIncludingNewline = instance.OutputData.Count;
+            
+            using var instance2 = new Instances.Instance("dotnet", "--help") { IgnoreEmptyLines = true };
+            await instance2.FinishedRunning();
+            var linesExcludingNewline = instance2.OutputData.Count;
+            
+            Assert.Less(linesExcludingNewline, linesIncludingNewline);
         }
         [Test]
         public void SecondErrorTest()
@@ -113,6 +160,25 @@ namespace Instance.Tests
             Assert.AreEqual(3, instance.OutputData.Count);
             Assert.IsEmpty(instance.ErrorData);
         }
+        // [Test]
+        // [Timeout(3)]
+        // public async Task StopTest()
+        // {
+        //     var timeoutSeconds = 5;
+        //     var isWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
+        //     var testCommand = isWindows ? "timeout" : "read";
+        //     var testArgs = isWindows ? $"{timeoutSeconds}" : $"-t {timeoutSeconds} -n1";
+        //     
+        //     var started = DateTime.UtcNow;
+        //     using var instance = new Instances.Instance(testCommand, testArgs);
+        //     var running = instance.FinishedRunning();
+        //     // instance.Started = false;
+        //     await running;
+        //
+        //     var elapsed = DateTime.UtcNow.Subtract(started).TotalSeconds;
+        //     
+        //     Assert.Greater(timeoutSeconds / 2.0, elapsed);
+        // }
         [Test]
         public void ThrowsOnDoubleStart()
         {
@@ -156,7 +222,6 @@ namespace Instance.Tests
             
             Assert.AreEqual(0, exitCode4);
             Assert.IsTrue(instance.OutputData.First().StartsWith(".NET Core"));
-            
         }
         [Test]
         public async Task StaticAsyncTest()
@@ -165,7 +230,6 @@ namespace Instance.Tests
             
             Assert.AreEqual(0, exitCode);
             Assert.IsTrue(instance.OutputData.First().StartsWith(".NET Core"));
-            
         }
         [Test]
         public void StaticSyncTest()
@@ -174,7 +238,6 @@ namespace Instance.Tests
             
             Assert.AreEqual(0, exitCode);
             Assert.IsTrue(instance.OutputData.First().StartsWith(".NET Core"));
-            
         }
     }
 }

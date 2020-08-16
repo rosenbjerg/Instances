@@ -60,16 +60,9 @@ namespace Instances
 
         public async Task SendInput(string input)
         {
-            if (_process == null) return;
-            
-            try
+            if (_process != null)
             {
                 await _process.StandardInput.WriteAsync(input);
-            }
-            catch (Exception e)
-            {
-                AddData(_errorData!, e.Message, DataType.Error, DataBufferCapacity, IgnoreEmptyLines, DataReceived,
-                    _stdoutTask!.TrySetResult);
             }
         }
 
