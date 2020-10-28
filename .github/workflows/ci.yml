@@ -15,7 +15,7 @@ jobs:
     - name: Run unit tests
       run: dotnet test /p:CollectCoverage=true /p:CoverletOutputFormat=lcov /p:CoverletOutput=lcov.info Instance.Tests
     - name: Find stuff
-      run: ls && echo '----' && ls Instance.Tests && echo '----' && ls Instance.Tests/bin && echo '----' && ls Instance.Tests/bin/Debug
+      run: find . -name "lcov.info"
     - name: Coveralls
       if: ${{ matrix.os == 'ubuntu-latest' }}
       uses: coverallsapp/github-action@v1.1.2
