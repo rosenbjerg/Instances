@@ -14,7 +14,6 @@
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\Instance.Tests.WaitForPress\Instance.Tests.WaitForPress.csproj" />
       <ProjectReference Include="..\Instance\Instance.csproj" />
     </ItemGroup>
 
