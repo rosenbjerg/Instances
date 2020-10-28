@@ -13,7 +13,7 @@ jobs:
       with:
         dotnet-version: 3.1.301
     - name: Run unit tests
-      run: dotnet test --collect:"XPlat Code Coverage"
+      run: dotnet test /p:CollectCoverage=true /p:CoverletOutputFormat=lcov /p:CoverletOutput=./lcov.info
     - name: Find stuff
       run: ls && echo '----' && ls Instance.Tests && echo '----' && ls Instance.Tests/bin && echo '----' && ls Instance.Tests/bin/Debug
     - name: Coveralls
