@@ -5,7 +5,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [windows-latest, ubuntu-latest, macos-latest]
+        os: [ubuntu-latest]
     steps:
     - uses: actions/checkout@v1
     - name: Setup .NET Core
@@ -14,6 +14,8 @@ jobs:
         dotnet-version: 3.1.301
     - name: Run unit tests
       run: dotnet test /p:CollectCoverage=true /p:CoverletOutputFormat=lcov /p:CoverletOutput=./lcov.info
+    - name: Find stuff
+      run: ls && echo '----' && ls Instances.Test
     - name: Coveralls
       if: ${{ matrix.os == 'ubuntu-latest' }}
       uses: coverallsapp/github-action@v1.1.2
