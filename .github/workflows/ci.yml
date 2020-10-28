@@ -5,20 +5,18 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest]
+        os: [windows-latest, ubuntu-latest, macos-latest]
     steps:
     - uses: actions/checkout@v1
     - name: Setup .NET Core
       uses: actions/setup-dotnet@v1
       with:
         dotnet-version: 3.1.301
-    - name: Run unit tests
+    - name: Run unit tests and collect coverage
       run: dotnet test /p:CollectCoverage=true /p:CoverletOutputFormat=lcov /p:CoverletOutput=./lcov.info
-    - name: Find stuff
-      run: ls && echo '----' && ls Instance.Tests && echo '----' && ls Instance.Tests/bin && echo '----' && ls Instance.Tests/bin/Debug
-    - name: Coveralls
+    - name: Upload coverage to Coveralls
       if: ${{ matrix.os == 'ubuntu-latest' }}
       uses: coverallsapp/github-action@v1.1.2
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
-        path-to-lcov: ./lcov.info
+        path-to-lcov: ./Instance.Tests/lcov.info
