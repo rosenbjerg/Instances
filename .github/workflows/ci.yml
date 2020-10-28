@@ -13,4 +13,10 @@ jobs:
       with:
         dotnet-version: 3.1.301
     - name: Run unit tests
-      run: dotnet test
+      run: dotnet test /p:CollectCoverage=true /p:CoverletOutputFormat=lcov /p:CoverletOutput=./lcov.info Instance.Tests/Instance.Tests.csproj
+    - name: Coveralls
+      if: ${{ matrix.os == 'ubuntu-latest' }}
+      uses: coverallsapp/github-action@v1.1.2
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        path-to-lcov: Instance.Tests/lcov.info
