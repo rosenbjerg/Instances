@@ -100,7 +100,7 @@ namespace Instances
             {
                 _process!.Start();
             }
-            catch (Win32Exception e) when(e.Message == "The system cannot find the file specified")
+            catch (Win32Exception e) when(e.Message == "The system cannot find the file specified." || e.Message == "No such file or directory")
             {
                 throw new InstanceFileNotFoundException(_process!.StartInfo.FileName, e);
             }

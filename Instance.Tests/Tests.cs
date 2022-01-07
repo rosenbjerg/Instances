@@ -199,6 +199,14 @@ namespace Instance.Tests
             });
         }
         [Test]
+        public void ThrowsOnFileNotFound()
+        {
+            Assert.Throws<InstanceFileNotFoundException>(() =>
+            {
+                Instances.Instance.Finish("akjsdhfaklsjdhfasldkjh", "--version");
+            });
+        }
+        [Test]
         public async Task RestartTest()
         {
             using var instance = new Instances.Instance("dotnet", "--help");
