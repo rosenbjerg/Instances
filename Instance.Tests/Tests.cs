@@ -124,12 +124,12 @@ namespace Instance.Tests
         [Test]
         public async Task SecondOutputTest()
         {
-            using var instance = new Instances.Instance("dotnet", "--version");
+            using var instance = new Instances.Instance("dotnet", "--help");
             
             var exitCode = await instance.FinishedRunning();
             
             Assert.AreEqual(0, exitCode);
-            Assert.IsTrue(instance.OutputData.First().StartsWith("3.1"));
+            Assert.IsTrue(instance.OutputData.Any(line => line.Contains("run")));
             Assert.IsTrue(!instance.ErrorData.Any());
         }
         [Test]
@@ -182,7 +182,7 @@ namespace Instance.Tests
         [Test]
         public void ThrowsOnDoubleStart()
         {
-            Assert.Throws<InstanceException>(() =>
+            Assert.Throws<InstanceAlreadyStartedException>(() =>
             {
                 using var instance = new Instances.Instance("dotnet", "--version");
                 instance.Started = true;
@@ -192,7 +192,7 @@ namespace Instance.Tests
         [Test]
         public void ThrowsOnPreemptiveStop()
         {
-            Assert.Throws<InstanceException>(() =>
+            Assert.Throws<InstanceNotRunningException>(() =>
             {
                 using var instance = new Instances.Instance("dotnet", "--version");
                 instance.Started = false;
@@ -201,27 +201,27 @@ namespace Instance.Tests
         [Test]
         public async Task RestartTest()
         {
-            using var instance = new Instances.Instance("dotnet", "--version");
+            using var instance = new Instances.Instance("dotnet", "--help");
             
             var exitCode = instance.BlockUntilFinished();
             
             Assert.AreEqual(0, exitCode);
-            Assert.IsTrue(instance.OutputData.First().StartsWith("3.1"));
+            Assert.IsTrue(instance.OutputData.Any(line => line.Contains("run")));
             
             var exitCode2 = await instance.FinishedRunning();
             
             Assert.AreEqual(0, exitCode2);
-            Assert.IsTrue(instance.OutputData.First().StartsWith("3.1"));
+            Assert.IsTrue(instance.OutputData.Any(line => line.Contains("run")));
             
             var exitCode3 = instance.BlockUntilFinished();
             
             Assert.AreEqual(0, exitCode3);
-            Assert.IsTrue(instance.OutputData.First().StartsWith("3.1"));
+            Assert.IsTrue(instance.OutputData.Any(line => line.Contains("run")));
             
             var exitCode4 = await instance.FinishedRunning();
             
             Assert.AreEqual(0, exitCode4);
-            Assert.IsTrue(instance.OutputData.First().StartsWith("3.1"));
+            Assert.IsTrue(instance.OutputData.Any(line => line.Contains("run")));
         }
     }
 }

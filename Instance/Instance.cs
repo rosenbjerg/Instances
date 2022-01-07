@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
@@ -74,8 +75,8 @@ namespace Instances
             get => _started;
             set
             {
-                if (_started && value) throw new InstanceException("Instance has already been started!");
-                if (!_started && !value) throw new InstanceException("Instance is not running!");
+                if (_started && value) throw new InstanceAlreadyStartedException();
+                if (!_started && !value) throw new InstanceNotRunningException();
 
                 if (value) Start();
                 else _process?.Kill();
@@ -84,7 +85,7 @@ namespace Instances
 
         private void Start()
         {
-            if (_started) throw new InstanceException("Instance has already been started!");
+            if (_started) throw new InstanceAlreadyStartedException();
             
             _outputData!.Clear();
             _errorData!.Clear();
@@ -95,7 +96,14 @@ namespace Instances
             InitializeProcess();
 
             _started = true;
-            _process!.Start();
+            try
+            {
+                _process!.Start();
+            }
+            catch (Win32Exception e) when(e.Message == "The system cannot find the file specified")
+            {
+                throw new InstanceFileNotFoundException(_process!.StartInfo.FileName, e);
+            }
             _process.BeginOutputReadLine();
             _process.BeginErrorReadLine();
         }
