@@ -197,7 +197,7 @@ namespace Instance.Tests
             await instance.WaitForExitAsync(cancel.Token);
         
             var elapsed = DateTime.UtcNow.Subtract(started).TotalSeconds;
-            Assert.Less(elapsed, 1);
+            Assert.Less(elapsed, 3);
             Assert.Greater(elapsed, 0.19);
         }
         
@@ -212,7 +212,7 @@ namespace Instance.Tests
             await instance.WaitForExitAsync();
         
             var elapsed = DateTime.UtcNow.Subtract(started).TotalSeconds;
-            Assert.Less(elapsed, 1);
+            Assert.Less(elapsed, 3);
             Assert.Greater(elapsed, 0.19);
         }
         
