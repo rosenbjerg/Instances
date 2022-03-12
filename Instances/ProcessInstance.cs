@@ -39,16 +39,14 @@ namespace Instances
         
         public async Task SendInputAsync(string input)
         {
-            if (_process.HasExited)
-                throw new InstanceProcessAlreadyExitedException();
+            ThrowIfProcessExited();
 
             await _process.StandardInput.WriteAsync(input).ConfigureAwait(false);
             await _process.StandardInput.FlushAsync().ConfigureAwait(false);
         }
         public void SendInput(string input)
         {
-            if (_process.HasExited)
-                throw new InstanceProcessAlreadyExitedException();
+            ThrowIfProcessExited();
 
             _process.StandardInput.Write(input);
             _process.StandardInput.Flush();
@@ -56,8 +54,7 @@ namespace Instances
 
         public IProcessResult Kill()
         {
-            if (_process.HasExited)
-                throw new InstanceProcessAlreadyExitedException();
+            ThrowIfProcessExited();
 
             try
             {
@@ -69,11 +66,10 @@ namespace Instances
                 throw new InstanceProcessAlreadyExitedException(e);
             }
         }
-        
+
         public async Task<IProcessResult> WaitForExitAsync(CancellationToken cancellationToken = default)
         {
-            if (_process.HasExited)
-                throw new InstanceProcessAlreadyExitedException();
+            ThrowIfProcessExited();
 
             if (cancellationToken != default) cancellationToken.Register(() => _process.Kill());
 
@@ -83,8 +79,7 @@ namespace Instances
 
         public IProcessResult WaitForExit()
         {
-            if (_process.HasExited)
-                throw new InstanceProcessAlreadyExitedException();
+            ThrowIfProcessExited();
 
             try
             {
@@ -134,6 +129,11 @@ namespace Instances
         {
             var exitCode = _process.HasExited ? _process.ExitCode : -100;
             return new ProcessResult(exitCode, _outputData.ToArray(), _errorData.ToArray());
+        }
+
+        private void ThrowIfProcessExited()
+        {
+            if (_process.HasExited) throw new InstanceProcessAlreadyExitedException();
         }
     }
 }

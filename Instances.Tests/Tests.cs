@@ -141,9 +141,7 @@ namespace Instances.Tests
         [Test]
         public async Task SecondOutputTest()
         {
-            var processArguments = new ProcessArguments("dotnet", "--help");
-            
-            using var instance = processArguments.Start();
+            using var instance = Instance.Start("dotnet", "--help");
             var result = await instance.WaitForExitAsync();
             
             Assert.Zero(result.ExitCode);
@@ -165,10 +163,9 @@ namespace Instances.Tests
         public async Task BufferCapacitiesCapsOutput()
         {
             var processArguments = new ProcessArguments("dotnet", "--help") { DataBufferCapacity = 3 };
-            using var instance = processArguments.Start();
-            await instance.WaitForExitAsync();
-            Assert.AreEqual(3, instance.OutputData.Count);
-            Assert.IsEmpty(instance.ErrorData);
+            var result = await processArguments.StartAndWaitForExitAsync();
+            Assert.AreEqual(3, result.OutputData.Count);
+            Assert.IsEmpty(result.ErrorData);
         }
 
         [Test]
