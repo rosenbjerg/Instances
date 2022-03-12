@@ -13,9 +13,15 @@
         <PackageTags>instances instance process async task events run exec</PackageTags>
         <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
         <PackageLicenseExpression>MIT</PackageLicenseExpression>
-        <PackageVersion>2.0.0</PackageVersion>
-        <PackageReleaseNotes>Improved API</PackageReleaseNotes>
+        <PackageVersion>2.1.0</PackageVersion>
+        <PackageReleaseNotes>Added extension methods for ease of use</PackageReleaseNotes>
         <RepositoryUrl>https://github.com/rosenbjerg/Instances</RepositoryUrl>
     </PropertyGroup>
+
+    <ItemGroup>
+      <Content Include="..\README.md">
+        <Link>README.md</Link>
+      </Content>
+    </ItemGroup>
 
 </Project>

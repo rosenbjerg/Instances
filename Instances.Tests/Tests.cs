@@ -19,7 +19,7 @@ namespace Instances.Tests
             arguments.Start();
             var result = completionSource.Task.GetAwaiter().GetResult();
             
-            Assert.AreEqual(1, result.ExitCode);
+            Assert.NotZero(result.ExitCode);
         }
         [Test]
         public void StaticFinishSuccessTest()
@@ -27,7 +27,7 @@ namespace Instances.Tests
             var outputReceived = false;
             var processResult = Instance.Finish("dotnet", "--list-runtimes", delegate { outputReceived = true; });
             Assert.AreEqual(true, outputReceived);
-            Assert.AreEqual(0, processResult.ExitCode);
+            Assert.Zero(processResult.ExitCode);
         }
         [Test]
         public void StaticFinishErrorTest()
@@ -35,7 +35,7 @@ namespace Instances.Tests
             var outputReceived = false;
             var processResult = Instance.Finish("dotnet", "run --project Nopes", delegate { outputReceived = true; });
             Assert.AreEqual(true, outputReceived);
-            Assert.AreNotEqual(0, processResult.ExitCode);
+            Assert.NotZero(processResult.ExitCode);
         }
         [Test]
         public async Task AsyncStaticFinishSuccessTest()
@@ -43,7 +43,7 @@ namespace Instances.Tests
             var outputReceived = false;
             var processResult = await Instance.FinishAsync("dotnet", "--list-runtimes", default, delegate { outputReceived = true; });
             Assert.AreEqual(true, outputReceived);
-            Assert.AreEqual(0, processResult.ExitCode);
+            Assert.Zero(processResult.ExitCode);
         }
         [Test]
         public async Task AsyncStaticFinishErrorTest()
@@ -51,7 +51,7 @@ namespace Instances.Tests
             var outputReceived = false;
             var processResult = await Instance.FinishAsync("dotnet", "run --project Nopes", default, delegate { outputReceived = true; });
             Assert.AreEqual(true, outputReceived);
-            Assert.AreNotEqual(0, processResult.ExitCode);
+            Assert.NotZero(processResult.ExitCode);
         }
         [Test]
         public async Task PublishesExitedEventOnSuccess()
@@ -63,7 +63,7 @@ namespace Instances.Tests
             processArguments.Start();
             var result = await completionSource.Task;
             
-            Assert.AreEqual(0, result.ExitCode);
+            Assert.Zero(result.ExitCode);
         }
         [Test]
         public void PublishesErrorEvents()
@@ -123,7 +123,7 @@ namespace Instances.Tests
             using var instance = processArguments.Start();
             var result = instance.WaitForExit();
 
-            Assert.AreEqual(0, result.ExitCode);
+            Assert.Zero(result.ExitCode);
             CollectionAssert.AreEqual(instance.ErrorData, result.ErrorData);
             CollectionAssert.AreEqual(instance.OutputData, result.OutputData);
         }
@@ -135,7 +135,7 @@ namespace Instances.Tests
             using var instance = processArguments.Start();
             var result = await instance.WaitForExitAsync();
             
-            Assert.AreEqual(1, result.ExitCode);
+            Assert.NotZero(result.ExitCode);
             CollectionAssert.IsNotEmpty(instance.ErrorData);
         }
         [Test]
@@ -146,20 +146,19 @@ namespace Instances.Tests
             using var instance = processArguments.Start();
             var result = await instance.WaitForExitAsync();
             
-            Assert.AreEqual(0, result.ExitCode);
-            Assert.IsTrue(instance.OutputData.Any(line => line.Contains("run")));
-            Assert.IsTrue(!instance.ErrorData.Any());
+            Assert.Zero(result.ExitCode);
+            Assert.IsTrue(result.OutputData.Any(line => line.Contains("run")));
+            CollectionAssert.IsEmpty(instance.ErrorData);
         }
         [Test]
         public void BasicOutputTest()
         {
             var processArguments = new ProcessArguments("dotnet", "--version");
             
-            using var instance = processArguments.Start();
-            instance.WaitForExit();
+            var result = processArguments.StartAndWaitForExit();
             
-            CollectionAssert.IsNotEmpty(instance.OutputData);
-            CollectionAssert.IsEmpty(instance.ErrorData);
+            CollectionAssert.IsNotEmpty(result.OutputData);
+            CollectionAssert.IsEmpty(result.ErrorData);
         }
         
         [Test]
