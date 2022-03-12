@@ -49,7 +49,7 @@ namespace Instances
                 process.BeginErrorReadLine();
                 return instance;
             }
-            catch (Win32Exception e) when (e.Message == "The system cannot find the file specified." || e.Message.Contains("No such file or directory") )
+            catch (Win32Exception e) when (e.Message.Contains("The system cannot find the file specified") || e.Message.Contains("No such file or directory") )
             {
                 throw new InstanceFileNotFoundException(_processStartInfo.FileName, e);
             }
