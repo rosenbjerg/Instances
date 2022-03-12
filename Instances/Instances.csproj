@@ -2,18 +2,17 @@
 
     <PropertyGroup>
         <TargetFramework>netstandard2.0</TargetFramework>
-        <RootNamespace>Instances</RootNamespace>
-        <AssemblyName>Instances</AssemblyName>
         <LangVersion>8</LangVersion>
         <Nullable>enable</Nullable>
         <PackageId>Instances</PackageId>
         <Title>Instances</Title>
         <Authors>Malte Rosenbjerg</Authors>
-        <Description>A process wrapper for asyncronous use, using Tasks or Events</Description>
+        <Description>A .NET Standard Process wrapper with an elegant API, for both asyncronous and syncronous use, providing both Events and support for Tasks with cancellation support</Description>
         <Copyright>Rosenbjerg Softworks</Copyright>
         <PackageProjectUrl>https://github.com/rosenbjerg/Instances</PackageProjectUrl>
         <PackageTags>instances instance process async task events run exec</PackageTags>
         <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+        <PackageLicenseExpression>MIT</PackageLicenseExpression>
         <PackageVersion>2.0.0</PackageVersion>
         <PackageReleaseNotes>Improved API</PackageReleaseNotes>
         <RepositoryUrl>https://github.com/rosenbjerg/Instances</RepositoryUrl>
