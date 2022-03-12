@@ -1,15 +1,11 @@
 using System;
-using System.Diagnostics;
-using System.IO;
 using System.Linq;
-using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
-using Instances;
 using Instances.Exceptions;
 using NUnit.Framework;
 
-namespace Instance.Tests
+namespace Instances.Tests
 {
     public class Tests
     {
@@ -18,7 +14,7 @@ namespace Instance.Tests
         {
             var arguments = new ProcessArguments("dotnet", "run --project Nopes");
             var completionSource = new TaskCompletionSource<IProcessResult>();
-            arguments.Exited += (sender, args) => completionSource.TrySetResult(args);
+            arguments.Exited += (_, args) => completionSource.TrySetResult(args);
 
             arguments.Start();
             var result = completionSource.Task.GetAwaiter().GetResult();
@@ -29,7 +25,7 @@ namespace Instance.Tests
         public void StaticFinishSuccessTest()
         {
             var outputReceived = false;
-            var processResult = Instances.Instance.Finish("dotnet", "--list-runtimes", delegate { outputReceived = true; });
+            var processResult = Instance.Finish("dotnet", "--list-runtimes", delegate { outputReceived = true; });
             Assert.AreEqual(true, outputReceived);
             Assert.AreEqual(0, processResult.ExitCode);
         }
@@ -37,7 +33,7 @@ namespace Instance.Tests
         public void StaticFinishErrorTest()
         {
             var outputReceived = false;
-            var processResult = Instances.Instance.Finish("dotnet", "run --project Nopes", delegate { outputReceived = true; });
+            var processResult = Instance.Finish("dotnet", "run --project Nopes", delegate { outputReceived = true; });
             Assert.AreEqual(true, outputReceived);
             Assert.AreNotEqual(0, processResult.ExitCode);
         }
@@ -45,7 +41,7 @@ namespace Instance.Tests
         public async Task AsyncStaticFinishSuccessTest()
         {
             var outputReceived = false;
-            var processResult = await Instances.Instance.FinishAsync("dotnet", "--list-runtimes", default, delegate { outputReceived = true; });
+            var processResult = await Instance.FinishAsync("dotnet", "--list-runtimes", default, delegate { outputReceived = true; });
             Assert.AreEqual(true, outputReceived);
             Assert.AreEqual(0, processResult.ExitCode);
         }
@@ -53,7 +49,7 @@ namespace Instance.Tests
         public async Task AsyncStaticFinishErrorTest()
         {
             var outputReceived = false;
-            var processResult = await Instances.Instance.FinishAsync("dotnet", "run --project Nopes", default, delegate { outputReceived = true; });
+            var processResult = await Instance.FinishAsync("dotnet", "run --project Nopes", default, delegate { outputReceived = true; });
             Assert.AreEqual(true, outputReceived);
             Assert.AreNotEqual(0, processResult.ExitCode);
         }
@@ -62,7 +58,7 @@ namespace Instance.Tests
         {
             var processArguments = new ProcessArguments("dotnet", "--list-runtimes");
             var completionSource = new TaskCompletionSource<IProcessResult>();
-            processArguments.Exited += (sender, args) => completionSource.TrySetResult(args);
+            processArguments.Exited += (_, args) => completionSource.TrySetResult(args);
 
             processArguments.Start();
             var result = await completionSource.Task;
@@ -74,7 +70,7 @@ namespace Instance.Tests
         {
             var processArguments = new ProcessArguments("dotnet", "run --project Nopes");
             var dataReceived = false;
-            processArguments.ErrorDataReceived += (sender, args) => dataReceived = true;
+            processArguments.ErrorDataReceived += (_, _) => dataReceived = true;
 
             using var instance = processArguments.Start();
             instance.WaitForExit();
@@ -86,7 +82,7 @@ namespace Instance.Tests
         {
             var processArguments = new ProcessArguments("dotnet", "--list-runtimes");
             var dataReceived = false;
-            processArguments.OutputDataReceived += (sender, args) => dataReceived = true;
+            processArguments.OutputDataReceived += (_, _) => dataReceived = true;
             
             using var instance = processArguments.Start();
             await instance.WaitForExitAsync();
@@ -181,7 +177,7 @@ namespace Instance.Tests
         {
             Assert.Throws<InstanceFileNotFoundException>(() =>
             {
-                Instances.Instance.Finish("akjsdhfaklsjdhfasldkjh", "--version");
+                Instance.Finish("akjsdhfaklsjdhfasldkjh", "--version");
             });
         }
         
@@ -197,7 +193,6 @@ namespace Instance.Tests
             await instance.WaitForExitAsync(cancel.Token);
         
             var elapsed = DateTime.UtcNow.Subtract(started).TotalSeconds;
-            Assert.Less(elapsed, 3);
             Assert.Greater(elapsed, 0.19);
         }
         
@@ -208,11 +203,10 @@ namespace Instance.Tests
              
             var started = DateTime.UtcNow;
             var instance = processArguments.Start();
-            Task.Delay(200).ContinueWith(t => instance.Kill());
+            Task.Delay(200).ContinueWith(_ => instance.Kill());
             await instance.WaitForExitAsync();
         
             var elapsed = DateTime.UtcNow.Subtract(started).TotalSeconds;
-            Assert.Less(elapsed, 3);
             Assert.Greater(elapsed, 0.19);
         }
         
@@ -233,7 +227,7 @@ namespace Instance.Tests
             var processArguments = GetWaitingProcessArguments();
              
             var instance = processArguments.Start();
-            Task.Delay(100).ContinueWith(t => instance.SendInput("ok"));
+            Task.Delay(100).ContinueWith(_ => instance.SendInput("ok"));
             instance.WaitForExit();
             Assert.Throws<InstanceProcessAlreadyExitedException>(() => instance.WaitForExit());
         }
@@ -244,7 +238,7 @@ namespace Instance.Tests
             var processArguments = GetWaitingProcessArguments();
              
             var instance = processArguments.Start();
-            Task.Delay(100).ContinueWith(t => instance.SendInput("ok"));
+            Task.Delay(100).ContinueWith(_ => instance.SendInput("ok"));
             await instance.WaitForExitAsync();
             Assert.ThrowsAsync<InstanceProcessAlreadyExitedException>(() => instance.WaitForExitAsync());
         }
@@ -257,11 +251,10 @@ namespace Instance.Tests
             var started = DateTime.UtcNow;
             var instance = processArguments.Start();
 
-            Task.Delay(200).ContinueWith(t => instance.SendInput("ok"));
+            Task.Delay(200).ContinueWith(_ => instance.SendInput("ok"));
             await instance.WaitForExitAsync();
         
             var elapsed = DateTime.UtcNow.Subtract(started).TotalSeconds;
-            Assert.Less(elapsed, 5);
             Assert.Greater(elapsed, 0.19);
         }
         
@@ -273,11 +266,10 @@ namespace Instance.Tests
             var started = DateTime.UtcNow;
             var instance = processArguments.Start();
             
-            Task.Delay(200).ContinueWith(t => instance.SendInputAsync("ok"));
+            Task.Delay(200).ContinueWith(_ => instance.SendInputAsync("ok"));
             await instance.WaitForExitAsync();
         
             var elapsed = DateTime.UtcNow.Subtract(started).TotalSeconds;
-            Assert.Less(elapsed, 5);
             Assert.Greater(elapsed, 0.19);
         }
 
