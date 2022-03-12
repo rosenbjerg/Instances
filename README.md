@@ -12,7 +12,7 @@ A .NET Standard `Process` wrapper with an elegant API, for both asyncronous and 
 # Usage
 There are three ways to use this library, requiring at least 1, 2, or 3 lines of code to use.
 
-### Shortest form
+### Shortest form, supporting only few options
 ```c#
 var result = await Instance.FinishAsync("dotnet", "build -c Release", cancellationToken);
 Console.WriteLine(result.ExitCode);
@@ -20,7 +20,7 @@ Console.WriteLine(result.ExitCode);
 var result = Instance.Finish("dotnet", "build -c Release");
 ```
 
-### Short form, allowing for more options
+### Short form, supporting more options
 ```c#
 using var instance = Instance.Start("dotnet", "build -c Release");
 var result = await instance.WaitForExitAsync(cancellationToken);
@@ -29,7 +29,7 @@ using var instance = Instance.Start("dotnet", "build -c Release");
 var result = instance.WaitForExit();
 ```
 
-### Full form, allowing for most options
+### Full form, supporting all options
 ```c#
 var processArgument = new ProcessArguments("dotnet", "build -c Release");
 processArgument.Exited += (_, exitResult) => Console.WriteLine(exitResult.ExitCode);
