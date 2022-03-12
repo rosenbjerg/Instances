@@ -223,13 +223,14 @@ namespace Instances.Tests
         }
         
         [Test, Timeout(10000)]
-        public void DoubleWaitForExitThrowsException()
+        public async Task DoubleWaitForExitThrowsException()
         {
             var processArguments = GetWaitingProcessArguments();
              
             var instance = processArguments.Start();
             Task.Delay(100).ContinueWith(_ => instance.SendInput("ok"));
             instance.WaitForExit();
+            await Task.Delay(100);
             Assert.Throws<InstanceProcessAlreadyExitedException>(() => instance.WaitForExit());
         }
         
@@ -241,6 +242,7 @@ namespace Instances.Tests
             var instance = processArguments.Start();
             Task.Delay(100).ContinueWith(_ => instance.SendInput("ok"));
             await instance.WaitForExitAsync();
+            await Task.Delay(100);
             Assert.ThrowsAsync<InstanceProcessAlreadyExitedException>(() => instance.WaitForExitAsync());
         }
         
