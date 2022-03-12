@@ -1,12 +1,9 @@
 ﻿using System;
 
-namespace Instances
+namespace Instances.Exceptions
 {
     public class InstanceException : Exception
     {
-        public InstanceException(string msg) : base(msg)
-        {
-        }
         public InstanceException(string msg, Exception innerException) : base(msg, innerException)
         {
         }

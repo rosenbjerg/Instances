@@ -1,6 +1,6 @@
 using System;
 
-namespace Instances
+namespace Instances.Exceptions
 {
     public class InstanceFileNotFoundException : InstanceException
     {
