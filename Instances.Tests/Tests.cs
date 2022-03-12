@@ -218,6 +218,7 @@ namespace Instances.Tests
             var instance = processArguments.Start();
             await Task.Delay(200);
             instance.Kill();
+            await Task.Delay(200);
             Assert.Throws<InstanceProcessAlreadyExitedException>(() => instance.Kill());
         }
         
