@@ -276,9 +276,15 @@ namespace Instances.Tests
             Assert.Greater(elapsed, 0.49);
         }
 
+        [OneTimeSetUp]
+        public async Task Prepare()
+        {
+            await Instance.FinishAsync("dotnet", "build ../../../../Instances.Tests.WaitingProgram");
+        }
+
         private static ProcessArguments GetWaitingProcessArguments()
         {
-            return new ProcessArguments("dotnet", "run --project ../../../../Instances.Tests.WaitingProgram");
+            return new ProcessArguments("dotnet", "run --project ../../../../Instances.Tests.WaitingProgram --no-build");
         }
     }
 }
