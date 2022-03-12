@@ -189,11 +189,11 @@ namespace Instances.Tests
             var started = DateTime.UtcNow;
             var instance = processArguments.Start();
             var cancel = new CancellationTokenSource();
-            cancel.CancelAfter(200);
+            cancel.CancelAfter(500);
             await instance.WaitForExitAsync(cancel.Token);
         
             var elapsed = DateTime.UtcNow.Subtract(started).TotalSeconds;
-            Assert.Greater(elapsed, 0.19);
+            Assert.Greater(elapsed, 0.49);
         }
         
         [Test, Timeout(10000)]
@@ -203,11 +203,11 @@ namespace Instances.Tests
              
             var started = DateTime.UtcNow;
             var instance = processArguments.Start();
-            Task.Delay(200).ContinueWith(_ => instance.Kill());
+            Task.Delay(500).ContinueWith(_ => instance.Kill());
             await instance.WaitForExitAsync();
         
             var elapsed = DateTime.UtcNow.Subtract(started).TotalSeconds;
-            Assert.Greater(elapsed, 0.19);
+            Assert.Greater(elapsed, 0.49);
         }
         
         [Test, Timeout(10000)]
@@ -228,7 +228,7 @@ namespace Instances.Tests
             var processArguments = GetWaitingProcessArguments();
              
             var instance = processArguments.Start();
-            Task.Delay(100).ContinueWith(_ => instance.SendInput("ok"));
+            Task.Delay(500).ContinueWith(_ => instance.SendInput("ok"));
             instance.WaitForExit();
             await Task.Delay(100);
             Assert.Throws<InstanceProcessAlreadyExitedException>(() => instance.WaitForExit());
@@ -240,7 +240,7 @@ namespace Instances.Tests
             var processArguments = GetWaitingProcessArguments();
              
             var instance = processArguments.Start();
-            Task.Delay(100).ContinueWith(_ => instance.SendInput("ok"));
+            Task.Delay(500).ContinueWith(_ => instance.SendInput("ok"));
             await instance.WaitForExitAsync();
             await Task.Delay(100);
             Assert.ThrowsAsync<InstanceProcessAlreadyExitedException>(() => instance.WaitForExitAsync());
@@ -254,11 +254,11 @@ namespace Instances.Tests
             var started = DateTime.UtcNow;
             var instance = processArguments.Start();
 
-            Task.Delay(200).ContinueWith(_ => instance.SendInput("ok"));
+            Task.Delay(500).ContinueWith(_ => instance.SendInput("ok"));
             await instance.WaitForExitAsync();
         
             var elapsed = DateTime.UtcNow.Subtract(started).TotalSeconds;
-            Assert.Greater(elapsed, 0.19);
+            Assert.Greater(elapsed, 0.49);
         }
         
         [Test, Timeout(10000)]
@@ -269,11 +269,11 @@ namespace Instances.Tests
             var started = DateTime.UtcNow;
             var instance = processArguments.Start();
             
-            Task.Delay(200).ContinueWith(_ => instance.SendInputAsync("ok"));
+            Task.Delay(500).ContinueWith(_ => instance.SendInputAsync("ok"));
             await instance.WaitForExitAsync();
         
             var elapsed = DateTime.UtcNow.Subtract(started).TotalSeconds;
-            Assert.Greater(elapsed, 0.19);
+            Assert.Greater(elapsed, 0.49);
         }
 
         private static ProcessArguments GetWaitingProcessArguments()
