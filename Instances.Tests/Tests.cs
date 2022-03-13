@@ -275,12 +275,12 @@ namespace Instances.Tests
         [OneTimeSetUp]
         public async Task Prepare()
         {
-            await Instance.FinishAsync("dotnet", "build ../../../../Instances.Tests.WaitingProgram");
+            await Instance.FinishAsync("dotnet", "build ../../../../Instances.Tests.WaitingProgram -c Release");
         }
 
         private static ProcessArguments GetWaitingProcessArguments()
         {
-            return new ProcessArguments("dotnet", "run --project ../../../../Instances.Tests.WaitingProgram --no-build");
+            return new ProcessArguments("dotnet", "run --project ../../../../Instances.Tests.WaitingProgram -c Release --no-build");
         }
     }
 }
