@@ -185,25 +185,25 @@ namespace Instances.Tests
             var started = DateTime.UtcNow;
             var instance = processArguments.Start();
             var cancel = new CancellationTokenSource();
-            cancel.CancelAfter(800);
+            cancel.CancelAfter(100);
             await instance.WaitForExitAsync(cancel.Token);
         
             var elapsed = DateTime.UtcNow.Subtract(started).TotalSeconds;
-            Assert.Greater(elapsed, 0.49);
+            Assert.Greater(elapsed, 0.09);
         }
         
         [Test, Timeout(10000)]
-        public async Task VerifyKillStopsProcess()
+        public void VerifyKillStopsProcess()
         {
             var processArguments = GetWaitingProcessArguments();
              
             var started = DateTime.UtcNow;
             var instance = processArguments.Start();
-            Task.Delay(800).ContinueWith(_ => instance.Kill());
-            await instance.WaitForExitAsync();
+            Task.Delay(100).ContinueWith(_ => instance.Kill());
+            instance.WaitForExit();
         
             var elapsed = DateTime.UtcNow.Subtract(started).TotalSeconds;
-            Assert.Greater(elapsed, 0.49);
+            Assert.Greater(elapsed, 0.09);
         }
         
         [Test, Timeout(10000)]
@@ -212,9 +212,9 @@ namespace Instances.Tests
             var processArguments = GetWaitingProcessArguments();
              
             var instance = processArguments.Start();
-            await Task.Delay(200);
+            await Task.Delay(100);
             instance.Kill();
-            await Task.Delay(200);
+            await Task.Delay(100);
             Assert.Throws<InstanceProcessAlreadyExitedException>(() => instance.Kill());
         }
         
@@ -224,7 +224,7 @@ namespace Instances.Tests
             var processArguments = GetWaitingProcessArguments();
              
             var instance = processArguments.Start();
-            Task.Delay(500).ContinueWith(_ => instance.SendInput("ok"));
+            Task.Delay(100).ContinueWith(_ => instance.SendInput("ok"));
             instance.WaitForExit();
             await Task.Delay(100);
             Assert.Throws<InstanceProcessAlreadyExitedException>(() => instance.WaitForExit());
@@ -236,7 +236,7 @@ namespace Instances.Tests
             var processArguments = GetWaitingProcessArguments();
              
             var instance = processArguments.Start();
-            Task.Delay(500).ContinueWith(_ => instance.SendInput("ok"));
+            Task.Delay(100).ContinueWith(_ => instance.SendInput("ok"));
             await instance.WaitForExitAsync();
             await Task.Delay(100);
             Assert.ThrowsAsync<InstanceProcessAlreadyExitedException>(() => instance.WaitForExitAsync());
@@ -250,11 +250,11 @@ namespace Instances.Tests
             var started = DateTime.UtcNow;
             var instance = processArguments.Start();
 
-            Task.Delay(500).ContinueWith(_ => instance.SendInput("ok"));
+            Task.Delay(100).ContinueWith(_ => instance.SendInput("ok"));
             await instance.WaitForExitAsync();
         
             var elapsed = DateTime.UtcNow.Subtract(started).TotalSeconds;
-            Assert.Greater(elapsed, 0.49);
+            Assert.Greater(elapsed, 0.09);
         }
         
         [Test, Timeout(10000)]
@@ -265,22 +265,22 @@ namespace Instances.Tests
             var started = DateTime.UtcNow;
             var instance = processArguments.Start();
             
-            Task.Delay(500).ContinueWith(_ => instance.SendInputAsync("ok"));
+            Task.Delay(100).ContinueWith(_ => instance.SendInputAsync("ok"));
             await instance.WaitForExitAsync();
         
             var elapsed = DateTime.UtcNow.Subtract(started).TotalSeconds;
-            Assert.Greater(elapsed, 0.49);
+            Assert.Greater(elapsed, 0.09);
         }
 
         [OneTimeSetUp]
         public async Task Prepare()
         {
-            await Instance.FinishAsync("dotnet", "build ../../../../Instances.Tests.WaitingProgram -c Release");
+            await Instance.FinishAsync("dotnet", "publish ../../../../Instances.Tests.WaitingProgram -c Release -o ./waiting-program");
         }
 
         private static ProcessArguments GetWaitingProcessArguments()
         {
-            return new ProcessArguments("dotnet", "run --project ../../../../Instances.Tests.WaitingProgram -c Release --no-build");
+            return new ProcessArguments("dotnet", "./waiting-program/Instances.Tests.WaitingProgram.dll");
         }
     }
 }
