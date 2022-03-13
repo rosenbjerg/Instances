@@ -1,5 +1,19 @@
 name: CI
-on: [push, pull_request]
+
+on:
+  push:
+    branches: [ master ]
+    paths:
+    - .github/workflows/ci.yml
+    - Instances/**
+    - Instances.Tests/**
+  pull_request:
+    branches: [ master, release ]
+    paths:
+    - Instances/**
+    - Instances.Tests/**
+
+
 jobs:
   build:
     runs-on: ${{ matrix.os }}
