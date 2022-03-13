@@ -2,7 +2,7 @@
 A .NET Standard `Process` wrapper with an elegant API, for both asyncronous and syncronous use, providing both Events and support for Tasks with cancellation support
  
 ![.NET Core](https://github.com/rosenbjerg/Instances/workflows/CI/badge.svg)
-[![Coverage Status](https://coveralls.io/repos/github/rosenbjerg/Instances/badge.svg?branch=master)](https://coveralls.io/github/rosenbjerg/Instances?branch=master)
+[![codecov.io](https://codecov.io/github/rosenbjerg/agentdeploy/coverage.svg?branch=main)](https://app.codecov.io/gh/rosenbjerg/Instances)
 [![GitHub](https://img.shields.io/github/license/rosenbjerg/Instances)](https://github.com/rosenbjerg/Instances/blob/master/LICENSE)
 [![Nuget](https://img.shields.io/nuget/v/instances)](https://www.nuget.org/packages/instances/)
 [![Nuget](https://img.shields.io/nuget/dt/instances)](https://www.nuget.org/packages/instances/)
