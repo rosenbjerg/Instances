@@ -47,7 +47,6 @@ namespace Instances
         public void SendInput(string input)
         {
             ThrowIfProcessExited();
-
             _process.StandardInput.Write(input);
             _process.StandardInput.Flush();
         }
