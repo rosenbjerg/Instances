@@ -185,7 +185,7 @@ namespace Instances.Tests
             var started = DateTime.UtcNow;
             var instance = processArguments.Start();
             var cancel = new CancellationTokenSource();
-            cancel.CancelAfter(500);
+            cancel.CancelAfter(800);
             await instance.WaitForExitAsync(cancel.Token);
         
             var elapsed = DateTime.UtcNow.Subtract(started).TotalSeconds;
@@ -199,7 +199,7 @@ namespace Instances.Tests
              
             var started = DateTime.UtcNow;
             var instance = processArguments.Start();
-            Task.Delay(500).ContinueWith(_ => instance.Kill());
+            Task.Delay(800).ContinueWith(_ => instance.Kill());
             await instance.WaitForExitAsync();
         
             var elapsed = DateTime.UtcNow.Subtract(started).TotalSeconds;
