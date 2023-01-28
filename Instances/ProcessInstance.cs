@@ -53,8 +53,6 @@ namespace Instances
 
         public IProcessResult Kill()
         {
-            ThrowIfProcessExited();
-
             try
             {
                 _process.Kill();
@@ -68,8 +66,6 @@ namespace Instances
 
         public async Task<IProcessResult> WaitForExitAsync(CancellationToken cancellationToken = default)
         {
-            ThrowIfProcessExited();
-
             if (cancellationToken != default) cancellationToken.Register(() => _process.Kill());
 
             await _mainTask.Task.ConfigureAwait(false);
@@ -78,8 +74,6 @@ namespace Instances
 
         public IProcessResult WaitForExit()
         {
-            ThrowIfProcessExited();
-
             try
             {
                 _process.WaitForExit();
