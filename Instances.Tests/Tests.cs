@@ -207,39 +207,48 @@ namespace Instances.Tests
         }
         
         [Test, Timeout(10000)]
-        public async Task DoubleKillThrowsException()
+        public async Task DoubleKillReturnsSameResult()
         {
             var processArguments = GetWaitingProcessArguments();
              
             var instance = processArguments.Start();
             await Task.Delay(100);
-            instance.Kill();
-            await Task.Delay(100);
-            Assert.Throws<InstanceProcessAlreadyExitedException>(() => instance.Kill());
+            var result1 = instance.Kill();
+            var result2 = instance.Kill();
+            
+            Assert.AreEqual(result1.ExitCode, result2.ExitCode);
+            CollectionAssert.AreEqual(result1.OutputData, result2.OutputData);
+            CollectionAssert.AreEqual(result1.ErrorData, result2.ErrorData);
         }
         
         [Test, Timeout(10000)]
-        public async Task DoubleWaitForExitThrowsException()
+        public async Task DoubleWaitForExitReturnsSameResult()
         {
             var processArguments = GetWaitingProcessArguments();
              
             var instance = processArguments.Start();
             Task.Delay(100).ContinueWith(_ => instance.SendInput("ok"));
-            instance.WaitForExit();
-            await Task.Delay(100);
-            Assert.Throws<InstanceProcessAlreadyExitedException>(() => instance.WaitForExit());
+            var result1 = instance.WaitForExit();
+            var result2 = instance.WaitForExit();
+            
+            Assert.AreEqual(result1.ExitCode, result2.ExitCode);
+            CollectionAssert.AreEqual(result1.OutputData, result2.OutputData);
+            CollectionAssert.AreEqual(result1.ErrorData, result2.ErrorData);
         }
         
         [Test, Timeout(10000)]
-        public async Task DoubleWaitForExitAsyncThrowsException()
+        public async Task DoubleWaitForExitAsyncReturnsSameResult()
         {
             var processArguments = GetWaitingProcessArguments();
              
             var instance = processArguments.Start();
             Task.Delay(100).ContinueWith(_ => instance.SendInput("ok"));
-            await instance.WaitForExitAsync();
-            await Task.Delay(100);
-            Assert.ThrowsAsync<InstanceProcessAlreadyExitedException>(() => instance.WaitForExitAsync());
+            var result1 = await instance.WaitForExitAsync();
+            var result2 = await instance.WaitForExitAsync();
+            
+            Assert.AreEqual(result1.ExitCode, result2.ExitCode);
+            CollectionAssert.AreEqual(result1.OutputData, result2.OutputData);
+            CollectionAssert.AreEqual(result1.ErrorData, result2.ErrorData);
         }
         
         [Test, Timeout(10000)]

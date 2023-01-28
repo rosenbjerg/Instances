@@ -13,8 +13,8 @@
         <PackageTags>instances instance process async task events run exec</PackageTags>
         <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
         <PackageLicenseExpression>MIT</PackageLicenseExpression>
-        <PackageVersion>2.1.0</PackageVersion>
-        <PackageReleaseNotes>Added extension methods for ease of use</PackageReleaseNotes>
+        <PackageVersion>3.0.0</PackageVersion>
+        <PackageReleaseNotes>Changed behaviour for handling process already exited on Kill, WaitForExit and WaitForExitAsync</PackageReleaseNotes>
         <RepositoryUrl>https://github.com/rosenbjerg/Instances</RepositoryUrl>
     </PropertyGroup>
 
