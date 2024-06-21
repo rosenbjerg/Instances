@@ -191,6 +191,21 @@ namespace Instances.Tests
             var elapsed = DateTime.UtcNow.Subtract(started).TotalSeconds;
             Assert.Greater(elapsed, 0.09);
         }
+
+        [Test, Timeout(10000)]
+        public async Task VerifyCancellationAlreadyExitedProcess()
+        {
+            var processArguments = GetWaitingProcessArguments();
+
+            var instance = processArguments.Start();
+            await instance.SendInputAsync("ok");
+
+            using var tokenSource = new CancellationTokenSource();
+            var result = await instance.WaitForExitAsync(tokenSource.Token);
+
+            Assert.DoesNotThrow(() => tokenSource.Cancel());
+            Assert.AreEqual(0, result.ExitCode);
+        }
         
         [Test, Timeout(10000)]
         public void VerifyKillStopsProcess()
