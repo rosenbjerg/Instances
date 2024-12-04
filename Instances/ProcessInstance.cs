@@ -66,7 +66,16 @@ namespace Instances
 
         public async Task<IProcessResult> WaitForExitAsync(CancellationToken cancellationToken = default)
         {
-            if (cancellationToken != default) cancellationToken.Register(() => _process.Kill());
+            if (cancellationToken != default)
+            {
+                cancellationToken.Register(() =>
+                {
+                    if (!_process.HasExited)
+                    {
+                        _process.Kill();
+                    }
+                });
+            }
 
             await _mainTask.Task.ConfigureAwait(false);
             return GetResult();
