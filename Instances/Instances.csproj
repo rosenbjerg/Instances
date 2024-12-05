@@ -13,8 +13,9 @@
         <PackageTags>instances instance process async task events run exec</PackageTags>
         <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
         <PackageLicenseExpression>MIT</PackageLicenseExpression>
-        <PackageVersion>3.0.0</PackageVersion>
-        <PackageReleaseNotes>Changed behaviour for handling process already exited on Kill, WaitForExit and WaitForExitAsync</PackageReleaseNotes>
+        <PackageVersion>3.0.1</PackageVersion>
+        <PackageReleaseNotes>- Bump dependencies
+- Fix for cancellation cornercase in WaitForExitAsync</PackageReleaseNotes>
         <RepositoryUrl>https://github.com/rosenbjerg/Instances</RepositoryUrl>
         <PackageReadmeFile>README.md</PackageReadmeFile>
     </PropertyGroup>
