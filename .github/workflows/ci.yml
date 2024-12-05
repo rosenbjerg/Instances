@@ -23,18 +23,20 @@ jobs:
         os: [windows-latest, ubuntu-latest, macos-latest]
         
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     
     - name: Setup .NET Core
-      uses: actions/setup-dotnet@v3
+      uses: actions/setup-dotnet@v4
       with:
-        dotnet-version: 6.0.x
+        dotnet-version: 8.0.x
         
     - name: Run unit tests and collect coverage
       run: dotnet test --collect "XPlat Code Coverage" --logger GitHubActions --verbosity normal
 
-    - name: Upload coverage reports to Codecov
-      uses: codecov/codecov-action@v3
+    - if: matrix.os == 'ubuntu-latest'
+      name: Upload coverage reports to Codecov
+      uses: codecov/codecov-action@v4
       with:
-        directory: Instances.Tests/TestResults
         fail_ci_if_error: true
+        directory: Instances.Tests/TestResults
+        token: ${{ secrets.CODECOV_TOKEN }}

@@ -4,6 +4,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Instances.Exceptions;
 using NUnit.Framework;
+using NUnit.Framework.Legacy;
 
 namespace Instances.Tests
 {
@@ -18,40 +19,39 @@ namespace Instances.Tests
 
             arguments.Start();
             var result = completionSource.Task.GetAwaiter().GetResult();
-            
-            Assert.NotZero(result.ExitCode);
+            Assert.That(result.ExitCode, Is.Not.EqualTo(0));
         }
         [Test]
         public void StaticFinishSuccessTest()
         {
             var outputReceived = false;
             var processResult = Instance.Finish("dotnet", "--list-runtimes", delegate { outputReceived = true; });
-            Assert.AreEqual(true, outputReceived);
-            Assert.Zero(processResult.ExitCode);
+            Assert.That(outputReceived, Is.True);
+            Assert.That(processResult.ExitCode, Is.EqualTo(0));
         }
         [Test]
         public void StaticFinishErrorTest()
         {
             var outputReceived = false;
             var processResult = Instance.Finish("dotnet", "run --project Nopes", delegate { outputReceived = true; });
-            Assert.AreEqual(true, outputReceived);
-            Assert.NotZero(processResult.ExitCode);
+            Assert.That(outputReceived, Is.True);
+            Assert.That(processResult.ExitCode, Is.Not.EqualTo(0));
         }
         [Test]
         public async Task AsyncStaticFinishSuccessTest()
         {
             var outputReceived = false;
             var processResult = await Instance.FinishAsync("dotnet", "--list-runtimes", default, delegate { outputReceived = true; });
-            Assert.AreEqual(true, outputReceived);
-            Assert.Zero(processResult.ExitCode);
+            Assert.That(outputReceived, Is.True);
+            Assert.That(processResult.ExitCode, Is.EqualTo(0));
         }
         [Test]
         public async Task AsyncStaticFinishErrorTest()
         {
             var outputReceived = false;
             var processResult = await Instance.FinishAsync("dotnet", "run --project Nopes", default, delegate { outputReceived = true; });
-            Assert.AreEqual(true, outputReceived);
-            Assert.NotZero(processResult.ExitCode);
+            Assert.That(outputReceived, Is.True);
+            Assert.That(processResult.ExitCode, Is.Not.EqualTo(0));
         }
         [Test]
         public async Task PublishesExitedEventOnSuccess()
@@ -63,7 +63,7 @@ namespace Instances.Tests
             processArguments.Start();
             var result = await completionSource.Task;
             
-            Assert.Zero(result.ExitCode);
+            Assert.That(result.ExitCode, Is.EqualTo(0));
         }
         [Test]
         public void PublishesErrorEvents()
@@ -75,7 +75,7 @@ namespace Instances.Tests
             using var instance = processArguments.Start();
             instance.WaitForExit();
             
-            Assert.IsTrue(dataReceived);
+            Assert.That(dataReceived, Is.True);
         }
         [Test]
         public async Task PublishesDataEvents()
@@ -87,7 +87,7 @@ namespace Instances.Tests
             using var instance = processArguments.Start();
             await instance.WaitForExitAsync();
             
-            Assert.IsTrue(dataReceived);
+            Assert.That(dataReceived, Is.True);
         }
         [Test]
         public async Task IgnoreEmptyLinesWork()
@@ -103,7 +103,7 @@ namespace Instances.Tests
             await instance2.WaitForExitAsync();
             var linesExcludingNewline = instance2.OutputData.Count;
             
-            Assert.Less(linesExcludingNewline, linesIncludingNewline);
+            Assert.That(linesExcludingNewline, Is.LessThan(linesIncludingNewline));
         }
         [Test]
         public void SecondErrorTest()
@@ -112,8 +112,7 @@ namespace Instances.Tests
 
             using var instance = processArguments.Start();
             instance.WaitForExit();
-            
-            Assert.IsTrue(instance.ErrorData.First() == "The build failed. Fix the build errors and run again.");
+            Assert.That(instance.ErrorData.First() == "The build failed. Fix the build errors and run again.", Is.True);
         }
         [Test]
         public void ResultMatchesInstance()
@@ -123,7 +122,7 @@ namespace Instances.Tests
             using var instance = processArguments.Start();
             var result = instance.WaitForExit();
 
-            Assert.Zero(result.ExitCode);
+            Assert.That(result.ExitCode, Is.EqualTo(0));
             CollectionAssert.AreEqual(instance.ErrorData, result.ErrorData);
             CollectionAssert.AreEqual(instance.OutputData, result.OutputData);
         }
@@ -135,7 +134,7 @@ namespace Instances.Tests
             using var instance = processArguments.Start();
             var result = await instance.WaitForExitAsync();
             
-            Assert.NotZero(result.ExitCode);
+            Assert.That(result.ExitCode, Is.Not.EqualTo(0));
             CollectionAssert.IsNotEmpty(instance.ErrorData);
         }
         [Test]
@@ -144,8 +143,8 @@ namespace Instances.Tests
             using var instance = Instance.Start("dotnet", "--help");
             var result = await instance.WaitForExitAsync();
             
-            Assert.Zero(result.ExitCode);
-            Assert.IsTrue(result.OutputData.Any(line => line.Contains("run")));
+            Assert.That(result.ExitCode, Is.EqualTo(0));
+            Assert.That(result.OutputData.Any(line => line.Contains("run")), Is.True);
             CollectionAssert.IsEmpty(instance.ErrorData);
         }
         [Test]
@@ -164,8 +163,8 @@ namespace Instances.Tests
         {
             var processArguments = new ProcessArguments("dotnet", "--help") { DataBufferCapacity = 3 };
             var result = await processArguments.StartAndWaitForExitAsync();
-            Assert.AreEqual(3, result.OutputData.Count);
-            Assert.IsEmpty(result.ErrorData);
+            Assert.That(result.OutputData.Count, Is.EqualTo(3));
+            Assert.That(result.ErrorData, Is.Empty);
         }
 
         [Test]
@@ -177,7 +176,7 @@ namespace Instances.Tests
             });
         }
         
-        [Test, Timeout(10000)]
+        [Test, CancelAfter(10000)]
         public async Task VerifyCancellationStopsProcess()
         {
             var processArguments = GetWaitingProcessArguments();
@@ -189,10 +188,10 @@ namespace Instances.Tests
             await instance.WaitForExitAsync(cancel.Token);
         
             var elapsed = DateTime.UtcNow.Subtract(started).TotalSeconds;
-            Assert.Greater(elapsed, 0.09);
+            Assert.That(elapsed, Is.GreaterThan(0.09));
         }
 
-        [Test, Timeout(10000)]
+        [Test, CancelAfter(10000)]
         public async Task VerifyCancellationAlreadyExitedProcess()
         {
             var processArguments = GetWaitingProcessArguments();
@@ -204,10 +203,10 @@ namespace Instances.Tests
             var result = await instance.WaitForExitAsync(tokenSource.Token);
 
             Assert.DoesNotThrow(() => tokenSource.Cancel());
-            Assert.AreEqual(0, result.ExitCode);
+            Assert.That(result.ExitCode, Is.EqualTo(0));
         }
         
-        [Test, Timeout(10000)]
+        [Test, CancelAfter(10000)]
         public void VerifyKillStopsProcess()
         {
             var processArguments = GetWaitingProcessArguments();
@@ -218,10 +217,10 @@ namespace Instances.Tests
             instance.WaitForExit();
         
             var elapsed = DateTime.UtcNow.Subtract(started).TotalSeconds;
-            Assert.Greater(elapsed, 0.09);
+            Assert.That(elapsed, Is.GreaterThan(0.09));
         }
         
-        [Test, Timeout(10000)]
+        [Test, CancelAfter(10000)]
         public async Task DoubleKillReturnsSameResult()
         {
             var processArguments = GetWaitingProcessArguments();
@@ -231,12 +230,12 @@ namespace Instances.Tests
             var result1 = instance.Kill();
             var result2 = instance.Kill();
             
-            Assert.AreEqual(result1.ExitCode, result2.ExitCode);
+            Assert.That(result1.ExitCode, Is.EqualTo(result2.ExitCode));
             CollectionAssert.AreEqual(result1.OutputData, result2.OutputData);
             CollectionAssert.AreEqual(result1.ErrorData, result2.ErrorData);
         }
         
-        [Test, Timeout(10000)]
+        [Test, CancelAfter(10000)]
         public async Task DoubleWaitForExitReturnsSameResult()
         {
             var processArguments = GetWaitingProcessArguments();
@@ -246,12 +245,12 @@ namespace Instances.Tests
             var result1 = instance.WaitForExit();
             var result2 = instance.WaitForExit();
             
-            Assert.AreEqual(result1.ExitCode, result2.ExitCode);
+            Assert.That(result1.ExitCode, Is.EqualTo(result2.ExitCode));
             CollectionAssert.AreEqual(result1.OutputData, result2.OutputData);
             CollectionAssert.AreEqual(result1.ErrorData, result2.ErrorData);
         }
         
-        [Test, Timeout(10000)]
+        [Test, CancelAfter(10000)]
         public async Task DoubleWaitForExitAsyncReturnsSameResult()
         {
             var processArguments = GetWaitingProcessArguments();
@@ -261,12 +260,12 @@ namespace Instances.Tests
             var result1 = await instance.WaitForExitAsync();
             var result2 = await instance.WaitForExitAsync();
             
-            Assert.AreEqual(result1.ExitCode, result2.ExitCode);
+            Assert.That(result1.ExitCode, Is.EqualTo(result2.ExitCode));
             CollectionAssert.AreEqual(result1.OutputData, result2.OutputData);
             CollectionAssert.AreEqual(result1.ErrorData, result2.ErrorData);
         }
         
-        [Test, Timeout(10000)]
+        [Test, CancelAfter(10000)]
         public async Task VerifySendInputBehaviour()
         {
             var processArguments = GetWaitingProcessArguments();
@@ -278,10 +277,10 @@ namespace Instances.Tests
             await instance.WaitForExitAsync();
         
             var elapsed = DateTime.UtcNow.Subtract(started).TotalSeconds;
-            Assert.Greater(elapsed, 0.09);
+            Assert.That(elapsed, Is.GreaterThan(0.09));
         }
         
-        [Test, Timeout(10000)]
+        [Test, CancelAfter(10000)]
         public async Task VerifySendInputAsyncBehaviour()
         {
             var processArguments = GetWaitingProcessArguments();
@@ -293,7 +292,7 @@ namespace Instances.Tests
             await instance.WaitForExitAsync();
         
             var elapsed = DateTime.UtcNow.Subtract(started).TotalSeconds;
-            Assert.Greater(elapsed, 0.09);
+            Assert.That(elapsed, Is.GreaterThan(0.09));
         }
 
         [OneTimeSetUp]
