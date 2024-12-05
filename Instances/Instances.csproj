@@ -16,8 +16,13 @@
         <PackageVersion>3.0.0</PackageVersion>
         <PackageReleaseNotes>Changed behaviour for handling process already exited on Kill, WaitForExit and WaitForExitAsync</PackageReleaseNotes>
         <RepositoryUrl>https://github.com/rosenbjerg/Instances</RepositoryUrl>
+        <PackageReadmeFile>README.md</PackageReadmeFile>
     </PropertyGroup>
 
+    <ItemGroup>
+        <None Include="..\README.md" Pack="true" PackagePath="\" />
+    </ItemGroup>
+    
     <ItemGroup>
       <Content Include="..\README.md">
         <Link>README.md</Link>
