@@ -1,5 +1,8 @@
 using System;
+using System.Diagnostics;
+using System.Globalization;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Instances.Exceptions;
@@ -303,6 +306,112 @@ namespace Instances.Tests
         
             var elapsed = DateTime.UtcNow.Subtract(started).TotalSeconds;
             Assert.That(elapsed, Is.GreaterThan(0.09));
+        }
+
+        // Regression test for https://github.com/rosenbjerg/Instances/issues/10:
+        // a deadlock when a process exits at almost the same moment its cancellation
+        // token fires. ReceiveExit disposed the CancellationTokenRegistration while the
+        // BCL held lock(process); the cancellation callback's HasExited needed that same
+        // lock -> circular wait.
+        //
+        // The race window is tiny (single-digit microseconds per attempt), so this is a
+        // volume-driven stress test: short-lived processes are raced against a cancellation
+        // timed near their natural exit, in oversubscribed parallel batches, for a fixed
+        // hunting budget. A WaitForExitAsync that never completes within perWaitTimeoutMs is
+        // a reproduced deadlock and fails the test. On the fixed library no attempt ever
+        // hangs, so the test runs the full budget and passes; on the buggy library it fails
+        // (usually within the first second or two on affected hardware).
+        [Test, CancelAfter(120000)]
+        public async Task WaitForExitAsyncDoesNotDeadlockWhenCancellationRacesExit()
+        {
+            const int sleepMs = 40;
+            const int reproBudgetMs = 20000;
+            const int perWaitTimeoutMs = 4000;
+
+            var averageLifetimeMs = await MeasureAverageLifetimeMs(sleepMs, samples: 8);
+            // Fire cancellation across a window that ends just before the average exit, so
+            // attempts where the process exits early collide with the cancellation callback.
+            var minOffsetMs = Math.Max(1, (int)(averageLifetimeMs * 0.7));
+            var maxOffsetMs = Math.Max(minOffsetMs + 1, averageLifetimeMs);
+            var batchSize = Math.Max(4, Environment.ProcessorCount * 3);
+
+            var budget = Stopwatch.StartNew();
+            while (budget.ElapsedMilliseconds < reproBudgetMs)
+            {
+                var batch = Enumerable.Range(0, batchSize)
+                    .Select(_ => RaceCancellationAgainstExit(sleepMs, minOffsetMs, maxOffsetMs, perWaitTimeoutMs))
+                    .ToArray();
+                var deadlocks = await Task.WhenAll(batch);
+                if (deadlocks.Any(d => d))
+                    Assert.Fail("WaitForExitAsync deadlocked when cancellation raced process exit (issue #10).");
+            }
+        }
+
+        // Returns true if WaitForExitAsync failed to complete within timeoutMs (deadlock).
+        private static async Task<bool> RaceCancellationAgainstExit(int sleepMs, int minOffsetMs, int maxOffsetMs, int timeoutMs)
+        {
+            var offset = Random.Shared.Next(minOffsetMs, maxOffsetMs + 1);
+            var processArguments = GetShortLivedProcessArguments(sleepMs);
+
+            var cts = new CancellationTokenSource();
+            IProcessInstance instance;
+            try
+            {
+                instance = processArguments.Start();
+            }
+            catch
+            {
+                cts.Dispose();
+                return false;
+            }
+
+            cts.CancelAfter(offset);
+            var waitTask = instance.WaitForExitAsync(cts.Token);
+
+            var finished = await Task.WhenAny(waitTask, Task.Delay(timeoutMs)).ConfigureAwait(false);
+            if (finished != waitTask)
+            {
+                // Deadlock: WaitForExitAsync never completed. Leak instance and cts on
+                // purpose -- disposing either would block on the stuck callback.
+                return true;
+            }
+
+            try { _ = await waitTask.ConfigureAwait(false); }
+            catch { /* cancellation / already-exited races are expected and are not deadlocks */ }
+            instance.Dispose();
+            cts.Dispose();
+            return false;
+        }
+
+        private static async Task<int> MeasureAverageLifetimeMs(int sleepMs, int samples)
+        {
+            long totalMs = 0;
+            for (var i = 0; i < samples; i++)
+            {
+                var sw = Stopwatch.StartNew();
+                using var instance = GetShortLivedProcessArguments(sleepMs).Start();
+                await instance.WaitForExitAsync().ConfigureAwait(false);
+                sw.Stop();
+                totalMs += sw.ElapsedMilliseconds;
+            }
+            return (int)(totalMs / samples);
+        }
+
+        private static ProcessArguments GetShortLivedProcessArguments(int sleepMs)
+        {
+            var ms = Math.Max(1, sleepMs);
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                return new ProcessArguments("powershell", $"-NoProfile -Command \"Start-Sleep -Milliseconds {ms}\"")
+                {
+                    IgnoreEmptyLines = true, DataBufferCapacity = 50
+                };
+            }
+            var seconds = (ms / 1000.0).ToString("0.000", CultureInfo.InvariantCulture);
+            return new ProcessArguments("/bin/sleep", seconds)
+            {
+                IgnoreEmptyLines = true, DataBufferCapacity = 50
+            };
         }
 
         [OneTimeSetUp]
