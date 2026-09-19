@@ -103,12 +103,24 @@ namespace Instances
 
         private void ReceiveExit(object sender, EventArgs e)
         {
-            _cancellationTokenRegister?.Dispose();
-            Task.WhenAll(_stdoutTask!.Task, _stderrTask!.Task).ContinueWith(task =>
+            // ReceiveExit runs inside the BCL's Process.RaiseOnExited, which holds
+            // lock(process). Disposing the cancellation registration here would block until
+            // any in-flight cancellation callback completes, and that callback reads
+            // _process.HasExited, which needs the same lock -> deadlock (issue #10). Dispose
+            // it from the continuation instead, which runs on the thread pool once the lock
+            // has been released.
+            Task.WhenAll(_stdoutTask!.Task, _stderrTask!.Task).ContinueWith(_ =>
             {
-                Exited?.Invoke(sender, GetResult());
-                return _mainTask.TrySetResult(true);
-            });
+                try
+                {
+                    _cancellationTokenRegister?.Dispose();
+                    Exited?.Invoke(sender, GetResult());
+                }
+                finally
+                {
+                    _mainTask.TrySetResult(true);
+                }
+            }, TaskScheduler.Default);
         }
         private void ReceiveOutput(object _, DataReceivedEventArgs e) => AddData(_outputData, e.Data, OutputDataReceived, _stdoutTask);
 
