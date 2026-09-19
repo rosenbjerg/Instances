@@ -13,9 +13,6 @@
         <PackageTags>instances instance process async task events run exec</PackageTags>
         <PackageLicenseExpression>MIT</PackageLicenseExpression>
         <PackageVersion>3.1.0</PackageVersion>
-        <PackageReleaseNotes>- Fix WaitForExitAsync deadlock when cancellation races process exit (#10)
-- Complete WaitForExitAsync even when an Exited handler throws
-- Dispose the cancellation registration when the instance is disposed</PackageReleaseNotes>
         <RepositoryUrl>https://github.com/rosenbjerg/Instances</RepositoryUrl>
         <PackageReadmeFile>README.md</PackageReadmeFile>
     </PropertyGroup>

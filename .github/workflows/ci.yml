@@ -78,14 +78,21 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
 
     - name: Setup .NET
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: 10.0.x
 
+    - name: Collect release notes since the previous release
+      run: |
+        previous=$(git describe --tags --abbrev=0 --match 'v*' 2>/dev/null || true)
+        git log --no-merges --pretty='- %s' ${previous:+"$previous.."}HEAD -- Instances/ | sed '/^- Bump version$/d' | tee notes.md
+
     - name: Pack
-      run: dotnet pack Instances -c Release -o artifacts -p:ContinuousIntegrationBuild=true
+      run: PackageReleaseNotes="$(cat notes.md)" dotnet pack Instances -c Release -o artifacts -p:ContinuousIntegrationBuild=true
 
     - name: NuGet login (OIDC -> short-lived API key)
       id: login
@@ -100,6 +107,4 @@ jobs:
       env:
         GH_TOKEN: ${{ github.token }}
         VERSION: ${{ needs.version.outputs.version }}
-      run: |
-        dotnet msbuild Instances/Instances.csproj -getProperty:PackageReleaseNotes > notes.md
-        gh release create "v$VERSION" artifacts/*.nupkg --target "$GITHUB_SHA" --title "$VERSION" --notes-file notes.md
+      run: gh release create "v$VERSION" artifacts/*.nupkg --target "$GITHUB_SHA" --title "$VERSION" --notes-file notes.md
