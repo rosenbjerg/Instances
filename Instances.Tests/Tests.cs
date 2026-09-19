@@ -337,9 +337,9 @@ namespace Instances.Tests
         {
             const int sleepMs = 40;
             const int reproBudgetMs = 20000;
-            const int perWaitTimeoutMs = 4000;
 
             var averageLifetimeMs = await MeasureAverageLifetimeMs(sleepMs, samples: 8);
+            var perWaitTimeoutMs = Math.Max(4000, averageLifetimeMs * 10);
             // Fire cancellation across a window that ends just before the average exit, so
             // attempts where the process exits early collide with the cancellation callback.
             var minOffsetMs = Math.Max(1, (int)(averageLifetimeMs * 0.7));
@@ -365,16 +365,7 @@ namespace Instances.Tests
             var processArguments = GetShortLivedProcessArguments(sleepMs);
 
             var cts = new CancellationTokenSource();
-            IProcessInstance instance;
-            try
-            {
-                instance = processArguments.Start();
-            }
-            catch
-            {
-                cts.Dispose();
-                return false;
-            }
+            var instance = processArguments.Start();
 
             cts.CancelAfter(offset);
             var waitTask = instance.WaitForExitAsync(cts.Token);
@@ -419,7 +410,7 @@ namespace Instances.Tests
                 };
             }
             var seconds = (ms / 1000.0).ToString("0.000", CultureInfo.InvariantCulture);
-            return new ProcessArguments("/bin/sleep", seconds)
+            return new ProcessArguments("sleep", seconds)
             {
                 IgnoreEmptyLines = true, DataBufferCapacity = 50
             };
