@@ -109,12 +109,18 @@ namespace Instances
             // _process.HasExited, which needs the same lock -> deadlock (issue #10). Dispose
             // it from the continuation instead, which runs on the thread pool once the lock
             // has been released.
-            Task.WhenAll(_stdoutTask!.Task, _stderrTask!.Task).ContinueWith(task =>
+            Task.WhenAll(_stdoutTask!.Task, _stderrTask!.Task).ContinueWith(_ =>
             {
-                _cancellationTokenRegister?.Dispose();
-                Exited?.Invoke(sender, GetResult());
-                return _mainTask.TrySetResult(true);
-            });
+                try
+                {
+                    _cancellationTokenRegister?.Dispose();
+                    Exited?.Invoke(sender, GetResult());
+                }
+                finally
+                {
+                    _mainTask.TrySetResult(true);
+                }
+            }, TaskScheduler.Default);
         }
         private void ReceiveOutput(object _, DataReceivedEventArgs e) => AddData(_outputData, e.Data, OutputDataReceived, _stdoutTask);
 

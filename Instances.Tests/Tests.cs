@@ -75,6 +75,17 @@ namespace Instances.Tests
             
             Assert.That(result.ExitCode, Is.EqualTo(0));
         }
+        [Test, CancelAfter(10000)]
+        public async Task WaitForExitAsyncCompletesWhenExitedHandlerThrows()
+        {
+            var processArguments = new ProcessArguments("dotnet", "--list-runtimes");
+            processArguments.Exited += (_, _) => throw new InvalidOperationException("handler failure");
+
+            using var instance = processArguments.Start();
+            var result = await instance.WaitForExitAsync();
+
+            Assert.That(result.ExitCode, Is.EqualTo(0));
+        }
         [Test]
         public void PublishesErrorEvents()
         {
