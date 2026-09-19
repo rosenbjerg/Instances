@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading;
@@ -71,9 +72,17 @@ namespace Instances
             {
                 _cancellationTokenRegister = cancellationToken.Register(() =>
                 {
-                    if (!_process.HasExited)
+                    // Don't pre-check HasExited - the process can exit in between, and on .NET Framework
+                    // Kill() then throws; an exception escaping this callback crashes the CancelAfter timer thread.
+                    try
                     {
                         _process.Kill();
+                    }
+                    catch (InvalidOperationException)
+                    {
+                    }
+                    catch (Win32Exception)
+                    {
                     }
                 });
             }
@@ -104,9 +113,9 @@ namespace Instances
         private void ReceiveExit(object sender, EventArgs e)
         {
             // ReceiveExit runs inside the BCL's Process.RaiseOnExited, which holds
-            // lock(process). Disposing the cancellation registration here would block until
-            // any in-flight cancellation callback completes, and that callback reads
-            // _process.HasExited, which needs the same lock -> deadlock (issue #10). Dispose
+            // lock(process). Disposing the cancellation registration here blocks until any
+            // in-flight cancellation callback completes, so anything that callback does that
+            // needs the same lock deadlocks (issue #10: it read _process.HasExited). Dispose
             // it from the continuation instead, which runs on the thread pool once the lock
             // has been released.
             Task.WhenAll(_stdoutTask!.Task, _stderrTask!.Task).ContinueWith(_ =>
