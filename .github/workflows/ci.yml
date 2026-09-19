@@ -14,6 +14,8 @@ on:
     - Instances/**
     - Instances.Tests/**
 
+permissions:
+  contents: read
 
 jobs:
   build:
@@ -40,3 +42,64 @@ jobs:
         fail_ci_if_error: true
         directory: Instances.Tests/TestResults
         token: ${{ secrets.CODECOV_TOKEN }}
+
+  version:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.resolve.outputs.version }}
+      published: ${{ steps.resolve.outputs.published }}
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 10.0.x
+
+    - name: Resolve PackageVersion and check whether nuget.org already has it
+      id: resolve
+      run: |
+        version=$(dotnet msbuild Instances/Instances.csproj -getProperty:PackageVersion)
+        published=$(curl -sf https://api.nuget.org/v3-flatcontainer/instances/index.json | jq -r --arg v "$version" '.versions | index($v) != null')
+        echo "Instances $version published=$published"
+        echo "version=$version" >> "$GITHUB_OUTPUT"
+        echo "published=$published" >> "$GITHUB_OUTPUT"
+
+  release:
+    needs: [build, version]
+    if: needs.version.outputs.published == 'false'
+    runs-on: ubuntu-latest
+    concurrency: release
+    permissions:
+      contents: write
+      id-token: write
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 10.0.x
+
+    - name: Pack
+      run: dotnet pack Instances -c Release -o artifacts -p:ContinuousIntegrationBuild=true
+
+    - name: NuGet login (OIDC -> short-lived API key)
+      id: login
+      uses: NuGet/login@v1
+      with:
+        user: rosenbjergsoftworks
+
+    - name: Push to nuget.org
+      run: dotnet nuget push artifacts/*.nupkg --api-key "${{ steps.login.outputs.NUGET_API_KEY }}" --source https://api.nuget.org/v3/index.json --skip-duplicate
+
+    - name: Tag and create GitHub release
+      env:
+        GH_TOKEN: ${{ github.token }}
+        VERSION: ${{ needs.version.outputs.version }}
+      run: |
+        dotnet msbuild Instances/Instances.csproj -getProperty:PackageReleaseNotes > notes.md
+        gh release create "v$VERSION" artifacts/*.nupkg --target "$GITHUB_SHA" --title "$VERSION" --notes-file notes.md
