@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading;
@@ -71,9 +72,14 @@ namespace Instances
             {
                 _cancellationTokenRegister = cancellationToken.Register(() =>
                 {
-                    if (!_process.HasExited)
+                    try
                     {
                         _process.Kill();
+                    }
+                    catch (InvalidOperationException )
+                    {
+                        // There is no process associated with this Process object. Ignoring.
+                        
                     }
                 });
             }
