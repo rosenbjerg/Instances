@@ -12,7 +12,7 @@
         <PackageProjectUrl>https://github.com/rosenbjerg/Instances</PackageProjectUrl>
         <PackageTags>instances instance process async task events run exec</PackageTags>
         <PackageLicenseExpression>MIT</PackageLicenseExpression>
-        <Version>3.1.0</Version>
+        <Version>3.2.0</Version>
         <RepositoryUrl>https://github.com/rosenbjerg/Instances</RepositoryUrl>
         <PackageReadmeFile>README.md</PackageReadmeFile>
         <EnablePackageValidation>true</EnablePackageValidation>
