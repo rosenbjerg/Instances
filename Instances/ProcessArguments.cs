@@ -8,6 +8,7 @@ namespace Instances
     public class ProcessArguments
     {
         private readonly ProcessStartInfo _processStartInfo;
+        private int _dataBufferCapacity = int.MaxValue;
 
         public ProcessArguments(string path, string arguments) : this(new ProcessStartInfo { FileName = path, Arguments = arguments }) { }
 
@@ -17,7 +18,13 @@ namespace Instances
         }
 
         public bool IgnoreEmptyLines { get; set; }
-        public int DataBufferCapacity { get; set; } = int.MaxValue;
+        public int DataBufferCapacity
+        {
+            get => _dataBufferCapacity;
+            set => _dataBufferCapacity = value >= 0
+                ? value
+                : throw new ArgumentOutOfRangeException(nameof(value), value, "DataBufferCapacity cannot be negative.");
+        }
 
         public event EventHandler<IProcessResult>? Exited;
         public event EventHandler<string>? OutputDataReceived;
