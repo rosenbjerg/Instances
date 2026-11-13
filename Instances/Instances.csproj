@@ -15,6 +15,8 @@
         <Version>3.1.0</Version>
         <RepositoryUrl>https://github.com/rosenbjerg/Instances</RepositoryUrl>
         <PackageReadmeFile>README.md</PackageReadmeFile>
+        <EnablePackageValidation>true</EnablePackageValidation>
+        <PackageValidationBaselineVersion>3.1.0</PackageValidationBaselineVersion>
     </PropertyGroup>
 
     <ItemGroup>
