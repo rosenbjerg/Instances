@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Instances.Exceptions;
@@ -31,8 +30,8 @@ namespace Instances
             _dataBufferCapacity = dataBufferCapacity;
         }
         
-        public IReadOnlyCollection<string> OutputData => _outputData.ToList().AsReadOnly();
-        public IReadOnlyCollection<string> ErrorData => _errorData.ToList().AsReadOnly();
+        public IReadOnlyCollection<string> OutputData => Array.AsReadOnly(Snapshot(_outputData));
+        public IReadOnlyCollection<string> ErrorData => Array.AsReadOnly(Snapshot(_errorData));
 
         public event EventHandler<IProcessResult>? Exited;
         public event EventHandler<string>? OutputDataReceived;
@@ -135,17 +134,28 @@ namespace Instances
             else
             {
                 if (_ignoreEmptyLines && data == string.Empty) return;
-                dataList.Enqueue(data);
-                for (var i = 0; i < dataList.Count - _dataBufferCapacity; i++) 
-                    dataList.Dequeue();
+                lock (dataList)
+                {
+                    dataList.Enqueue(data);
+                    while (dataList.Count > _dataBufferCapacity)
+                        dataList.Dequeue();
+                }
                 eventHandler?.Invoke(this, data);
+            }
+        }
+
+        private static string[] Snapshot(Queue<string> dataList)
+        {
+            lock (dataList)
+            {
+                return dataList.ToArray();
             }
         }
 
         private IProcessResult GetResult()
         {
             var exitCode = _process.HasExited ? _process.ExitCode : -100;
-            return new ProcessResult(exitCode, _outputData.ToArray(), _errorData.ToArray());
+            return new ProcessResult(exitCode, Snapshot(_outputData), Snapshot(_errorData));
         }
 
         private void ThrowIfProcessExited()
