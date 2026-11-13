@@ -1,6 +1,7 @@
 using System;
 using System.Diagnostics;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -20,7 +21,7 @@ namespace Instances.Tests
             var completionSource = new TaskCompletionSource<IProcessResult>();
             arguments.Exited += (_, args) => completionSource.TrySetResult(args);
 
-            arguments.Start();
+            using var instance = arguments.Start();
             var result = completionSource.Task.GetAwaiter().GetResult();
             Assert.That(result.ExitCode, Is.Not.EqualTo(0));
         }
@@ -70,9 +71,9 @@ namespace Instances.Tests
             var completionSource = new TaskCompletionSource<IProcessResult>();
             processArguments.Exited += (_, args) => completionSource.TrySetResult(args);
 
-            processArguments.Start();
+            using var instance = processArguments.Start();
             var result = await completionSource.Task;
-            
+
             Assert.That(result.ExitCode, Is.EqualTo(0));
         }
         [Test, CancelAfter(10000)]
@@ -220,7 +221,7 @@ namespace Instances.Tests
         {
             var processArguments = GetWaitingProcessArguments();
 
-            var instance = processArguments.Start();
+            using var instance = processArguments.Start();
             await instance.SendInputAsync("ok");
 
             using var tokenSource = new CancellationTokenSource();
@@ -229,27 +230,26 @@ namespace Instances.Tests
             Assert.DoesNotThrow(() => tokenSource.Cancel());
             Assert.That(result.ExitCode, Is.EqualTo(0));
         }
-        
+
         [Test, CancelAfter(10000)]
-        public void VerifyKillStopsProcess()
+        public async Task VerifyKillStopsProcess()
         {
             var processArguments = GetWaitingProcessArguments();
-             
-            var started = DateTime.UtcNow;
-            var instance = processArguments.Start();
-            Task.Delay(100).ContinueWith(_ => instance.Kill());
-            instance.WaitForExit();
-        
-            var elapsed = DateTime.UtcNow.Subtract(started).TotalSeconds;
-            Assert.That(elapsed, Is.GreaterThan(0.09));
+
+            using var instance = processArguments.Start();
+            var kill = Task.Delay(100).ContinueWith(_ => instance.Kill());
+            var result = instance.WaitForExit();
+            await kill;
+
+            Assert.That(result.ExitCode, Is.Not.EqualTo(0));
         }
-        
+
         [Test, CancelAfter(10000)]
         public async Task DoubleKillReturnsSameResult()
         {
             var processArguments = GetWaitingProcessArguments();
-             
-            var instance = processArguments.Start();
+
+            using var instance = processArguments.Start();
             await Task.Delay(100);
             var result1 = instance.Kill();
             var result2 = instance.Kill();
@@ -264,60 +264,60 @@ namespace Instances.Tests
         public async Task DoubleWaitForExitReturnsSameResult()
         {
             var processArguments = GetWaitingProcessArguments();
-             
-            var instance = processArguments.Start();
-            Task.Delay(100).ContinueWith(_ => instance.SendInput("ok"));
+
+            using var instance = processArguments.Start();
+            var send = Task.Delay(100).ContinueWith(_ => instance.SendInput("ok"));
             var result1 = instance.WaitForExit();
             var result2 = instance.WaitForExit();
-            
+            await send;
+
+            Assert.That(result1.ExitCode, Is.EqualTo(0));
             Assert.That(result1.ExitCode, Is.EqualTo(result2.ExitCode));
             CollectionAssert.AreEqual(result1.OutputData, result2.OutputData);
             CollectionAssert.AreEqual(result1.ErrorData, result2.ErrorData);
         }
-        
+
         [Test, CancelAfter(10000)]
         public async Task DoubleWaitForExitAsyncReturnsSameResult()
         {
             var processArguments = GetWaitingProcessArguments();
-             
-            var instance = processArguments.Start();
-            Task.Delay(100).ContinueWith(_ => instance.SendInput("ok"));
+
+            using var instance = processArguments.Start();
+            var send = Task.Delay(100).ContinueWith(_ => instance.SendInput("ok"));
             var result1 = await instance.WaitForExitAsync();
             var result2 = await instance.WaitForExitAsync();
-            
+            await send;
+
+            Assert.That(result1.ExitCode, Is.EqualTo(0));
             Assert.That(result1.ExitCode, Is.EqualTo(result2.ExitCode));
             CollectionAssert.AreEqual(result1.OutputData, result2.OutputData);
             CollectionAssert.AreEqual(result1.ErrorData, result2.ErrorData);
         }
-        
+
         [Test, CancelAfter(10000)]
         public async Task VerifySendInputBehaviour()
         {
             var processArguments = GetWaitingProcessArguments();
 
-            var started = DateTime.UtcNow;
-            var instance = processArguments.Start();
+            using var instance = processArguments.Start();
+            var send = Task.Delay(100).ContinueWith(_ => instance.SendInput("ok"));
+            var result = await instance.WaitForExitAsync();
+            await send;
 
-            Task.Delay(100).ContinueWith(_ => instance.SendInput("ok"));
-            await instance.WaitForExitAsync();
-        
-            var elapsed = DateTime.UtcNow.Subtract(started).TotalSeconds;
-            Assert.That(elapsed, Is.GreaterThan(0.09));
+            Assert.That(result.ExitCode, Is.EqualTo(0));
         }
-        
+
         [Test, CancelAfter(10000)]
         public async Task VerifySendInputAsyncBehaviour()
         {
             var processArguments = GetWaitingProcessArguments();
 
-            var started = DateTime.UtcNow;
-            var instance = processArguments.Start();
-            
-            Task.Delay(100).ContinueWith(_ => instance.SendInputAsync("ok"));
-            await instance.WaitForExitAsync();
-        
-            var elapsed = DateTime.UtcNow.Subtract(started).TotalSeconds;
-            Assert.That(elapsed, Is.GreaterThan(0.09));
+            using var instance = processArguments.Start();
+            var send = Task.Delay(100).ContinueWith(_ => instance.SendInputAsync("ok")).Unwrap();
+            var result = await instance.WaitForExitAsync();
+            await send;
+
+            Assert.That(result.ExitCode, Is.EqualTo(0));
         }
 
         // Regression test for https://github.com/rosenbjerg/Instances/issues/10:
@@ -588,12 +588,17 @@ namespace Instances.Tests
         [OneTimeSetUp]
         public async Task Prepare()
         {
-            await Instance.FinishAsync("dotnet", "publish ../../../../Instances.Tests.WaitingProgram -c Release -o ./waiting-program");
+            var project = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "Instances.Tests.WaitingProgram"));
+            var result = await Instance.FinishAsync("dotnet", $"publish \"{project}\" -c Release -o \"{WaitingProgramDirectory}\"");
+            Assert.That(result.ExitCode, Is.EqualTo(0), string.Join(Environment.NewLine, result.OutputData.Concat(result.ErrorData)));
         }
+
+        private static string WaitingProgramDirectory => Path.Combine(AppContext.BaseDirectory, "waiting-program");
 
         private static ProcessArguments GetWaitingProcessArguments(params string[] arguments)
         {
-            return new ProcessArguments("dotnet", string.Join(" ", new[] { "./waiting-program/Instances.Tests.WaitingProgram.dll" }.Concat(arguments)));
+            var program = Path.Combine(WaitingProgramDirectory, "Instances.Tests.WaitingProgram.dll");
+            return new ProcessArguments("dotnet", string.Join(" ", new[] { $"\"{program}\"" }.Concat(arguments)));
         }
     }
 }
