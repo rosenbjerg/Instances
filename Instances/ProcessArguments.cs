@@ -7,6 +7,8 @@ namespace Instances
 {
     public class ProcessArguments
     {
+        private const int FileNotFoundErrorCode = 2;
+
         private readonly ProcessStartInfo _processStartInfo;
         private int _dataBufferCapacity = int.MaxValue;
 
@@ -56,9 +58,12 @@ namespace Instances
                 process.BeginErrorReadLine();
                 return instance;
             }
-            catch (Win32Exception e) when (e.Message.Contains("The system cannot find the file specified") || e.Message.Contains("No such file or directory") )
+            catch (Exception e)
             {
-                throw new InstanceFileNotFoundException(_processStartInfo.FileName, e);
+                process.Dispose();
+                if (e is Win32Exception { NativeErrorCode: FileNotFoundErrorCode })
+                    throw new InstanceFileNotFoundException(_processStartInfo.FileName, e);
+                throw;
             }
         }
     }
