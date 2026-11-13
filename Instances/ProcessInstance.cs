@@ -30,6 +30,7 @@ namespace Instances
         private IProcessResult? _result;
         private int _completing;
         private volatile bool _disposed;
+        private bool _inputClosed;
 
         internal ProcessInstance(Process process, bool ignoreEmptyLines, int dataBufferCapacity)
         {
@@ -61,6 +62,14 @@ namespace Instances
             ThrowIfInputUnavailable();
             _process.StandardInput.Write(input);
             _process.StandardInput.Flush();
+        }
+
+        public void CloseInput()
+        {
+            ThrowIfDisposed();
+            if (_inputClosed) return;
+            _inputClosed = true;
+            _process.StandardInput.Close();
         }
 
         public IProcessResult Kill()
@@ -261,6 +270,7 @@ namespace Instances
         private void ThrowIfInputUnavailable()
         {
             ThrowIfDisposed();
+            if (_inputClosed) throw new InvalidOperationException("Standard input has been closed.");
             if (_process.HasExited) throw new InstanceProcessAlreadyExitedException();
         }
     }
