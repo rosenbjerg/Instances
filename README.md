@@ -50,9 +50,11 @@ using var instance = Instance.Start("dotnet", "build -c Release");
 
 // send input to process' standard input
 instance.SendInput("Hello World");
+// and close it, for programs that read their input to its end
+instance.CloseInput();
 
-// stop the process
-instance.Kill();
+// stop the process and get its exit code and the output read so far
+var killed = instance.Kill();
 
 // access process output
 foreach (var line in instance.OutputData)
@@ -66,3 +68,12 @@ var result = await instance.WaitForExitAsync(cancellationToken);
 Console.WriteLine(result.ExitCode);
 Console.WriteLine(result.OutputData.Count);
 ```
+
+## Behaviour
+
+- Cancelling the token of `WaitForExitAsync` kills the process and returns its result.
+- After a kill, the wait for the output to end lasts at most 5 seconds, so a child process that keeps the output open cannot hold it.
+- Set `KillEntireProcessTree` on `ProcessArguments` to kill the child processes too; it needs the .NET 8 build of the package.
+- `Kill()` waits for the process to exit and returns its exit code with the output read so far.
+- An exception thrown by an `OutputDataReceived` or `ErrorDataReceived` handler does not stop the reading of the output: `WaitForExit` and `WaitForExitAsync` rethrow it, or an `AggregateException` when several handlers failed.
+- `DataBufferCapacity` keeps the last lines of each stream and cannot be negative.
