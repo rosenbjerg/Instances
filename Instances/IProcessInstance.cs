@@ -10,8 +10,8 @@ namespace Instances
         Task SendInputAsync(string input);
         void SendInput(string input);
 
-        public Task<IProcessResult> WaitForExitAsync(CancellationToken cancellationToken = default);
-        public IProcessResult WaitForExit();
+        Task<IProcessResult> WaitForExitAsync(CancellationToken cancellationToken = default);
+        IProcessResult WaitForExit();
         
         IProcessResult Kill();
         
