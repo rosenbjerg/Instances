@@ -27,6 +27,7 @@ namespace Instances
                 ? value
                 : throw new ArgumentOutOfRangeException(nameof(value), value, "DataBufferCapacity cannot be negative.");
         }
+        public bool KillEntireProcessTree { get; set; }
 
         public event EventHandler<IProcessResult>? Exited;
         public event EventHandler<string>? OutputDataReceived;
@@ -34,6 +35,10 @@ namespace Instances
 
         public IProcessInstance Start()
         {
+#if !NET5_0_OR_GREATER
+            if (KillEntireProcessTree)
+                throw new PlatformNotSupportedException("KillEntireProcessTree requires the .NET 8 build of Instances.");
+#endif
             _processStartInfo.CreateNoWindow = true;
             _processStartInfo.UseShellExecute = false;
             _processStartInfo.RedirectStandardOutput = true;
@@ -45,7 +50,7 @@ namespace Instances
                 EnableRaisingEvents = true
             };
             
-            var instance = new ProcessInstance(process, IgnoreEmptyLines, DataBufferCapacity);
+            var instance = new ProcessInstance(process, IgnoreEmptyLines, DataBufferCapacity, KillEntireProcessTree);
 
             instance.Exited += Exited;
             instance.OutputDataReceived += OutputDataReceived;
