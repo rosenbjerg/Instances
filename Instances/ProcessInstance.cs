@@ -1,7 +1,9 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Runtime.ExceptionServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Instances.Exceptions;
@@ -11,6 +13,7 @@ namespace Instances
     public class ProcessInstance : IProcessInstance
     {
         private static readonly TimeSpan KillGracePeriod = TimeSpan.FromSeconds(5);
+        private const int MaxHandlerExceptions = 100;
 
         [ThreadStatic] private static ProcessInstance? _raisingExited;
 
@@ -22,6 +25,7 @@ namespace Instances
         private readonly TaskCompletionSource<bool> _stderrTask = new TaskCompletionSource<bool>();
         private readonly Queue<string> _outputData = new Queue<string>();
         private readonly Queue<string> _errorData = new Queue<string>();
+        private readonly ConcurrentQueue<Exception> _handlerExceptions = new ConcurrentQueue<Exception>();
         private readonly object _resultLock = new object();
         private IProcessResult? _result;
         private int _completing;
@@ -76,14 +80,14 @@ namespace Instances
             var result = FinishedResult ?? (cancellationToken.CanBeCanceled
                 ? await WaitOrKillAsync(cancellationToken).ConfigureAwait(false)
                 : await _completion.Task.ConfigureAwait(false));
-            return result;
+            return ThrowIfHandlersFailed(result);
         }
 
         public IProcessResult WaitForExit()
         {
             ThrowIfDisposedAsExited();
             var finished = FinishedResult;
-            if (finished != null) return finished;
+            if (finished != null) return ThrowIfHandlersFailed(finished);
 
             try
             {
@@ -94,7 +98,7 @@ namespace Instances
                 throw new InstanceProcessAlreadyExitedException(e);
             }
             Task.WaitAll(_stdoutTask.Task, _stderrTask.Task);
-            return GetOrCreateResult();
+            return ThrowIfHandlersFailed(GetOrCreateResult());
         }
 
         public void Dispose()
@@ -217,8 +221,23 @@ namespace Instances
                     while (dataList.Count > _dataBufferCapacity)
                         dataList.Dequeue();
                 }
-                eventHandler?.Invoke(this, data);
+                try
+                {
+                    eventHandler?.Invoke(this, data);
+                }
+                catch (Exception e)
+                {
+                    if (_handlerExceptions.Count < MaxHandlerExceptions) _handlerExceptions.Enqueue(e);
+                }
             }
+        }
+
+        private IProcessResult ThrowIfHandlersFailed(IProcessResult result)
+        {
+            var exceptions = _handlerExceptions.ToArray();
+            if (exceptions.Length == 1) ExceptionDispatchInfo.Capture(exceptions[0]).Throw();
+            if (exceptions.Length > 1) throw new AggregateException(exceptions);
+            return result;
         }
 
         private static string[] Snapshot(Queue<string> dataList)
