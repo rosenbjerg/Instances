@@ -12,7 +12,7 @@ namespace Instances
             return Start(new ProcessStartInfo { FileName = path, Arguments = arguments }, outputHandler, errorHandler);
         }
 
-        public static IProcessInstance Start(ProcessStartInfo startInfo, EventHandler<string>? outputHandler, EventHandler<string>? errorHandler)
+        public static IProcessInstance Start(ProcessStartInfo startInfo, EventHandler<string>? outputHandler = default, EventHandler<string>? errorHandler = default)
         {
             var arguments = new ProcessArguments(startInfo);
             if (outputHandler != default) arguments.OutputDataReceived += outputHandler;
