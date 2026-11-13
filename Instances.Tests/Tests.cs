@@ -204,15 +204,15 @@ namespace Instances.Tests
         public async Task VerifyCancellationStopsProcess()
         {
             var processArguments = GetWaitingProcessArguments();
-             
-            var started = DateTime.UtcNow;
-            var instance = processArguments.Start();
-            var cancel = new CancellationTokenSource();
-            cancel.CancelAfter(100);
-            await instance.WaitForExitAsync(cancel.Token);
-        
-            var elapsed = DateTime.UtcNow.Subtract(started).TotalSeconds;
-            Assert.That(elapsed, Is.GreaterThan(0.09));
+            IProcessResult exitedResult = null;
+            processArguments.Exited += (_, result) => exitedResult = result;
+
+            using var instance = processArguments.Start();
+            using var cancel = new CancellationTokenSource(100);
+            var result = await instance.WaitForExitAsync(cancel.Token);
+
+            Assert.That(result.ExitCode, Is.Not.EqualTo(0));
+            Assert.That(exitedResult, Is.SameAs(result));
         }
 
         [Test, CancelAfter(10000)]
@@ -253,7 +253,8 @@ namespace Instances.Tests
             await Task.Delay(100);
             var result1 = instance.Kill();
             var result2 = instance.Kill();
-            
+
+            Assert.That(result1.ExitCode, Is.Not.EqualTo(0).And.Not.EqualTo(-100));
             Assert.That(result1.ExitCode, Is.EqualTo(result2.ExitCode));
             CollectionAssert.AreEqual(result1.OutputData, result2.OutputData);
             CollectionAssert.AreEqual(result1.ErrorData, result2.ErrorData);
@@ -416,15 +417,183 @@ namespace Instances.Tests
             };
         }
 
+        [Test, CancelAfter(30000)]
+        public async Task OutputDataCanBeReadWhileTheProcessWrites()
+        {
+            using var instance = GetWaitingProcessArguments("lines", "100000").Start();
+            var wait = instance.WaitForExitAsync();
+            while (!wait.IsCompleted)
+            {
+                _ = instance.OutputData.Count;
+                await Task.Delay(1);
+            }
+
+            var result = await wait;
+            Assert.That(result.OutputData, Has.Count.EqualTo(100000));
+        }
+
+        [Test, CancelAfter(30000)]
+        public void ExitedIsRaisedWhenStartAndWaitForExitDisposesTheInstance()
+        {
+            for (var i = 0; i < 20; i++)
+            {
+                var processArguments = GetWaitingProcessArguments("lines", "1");
+                var exited = new TaskCompletionSource<IProcessResult>();
+                processArguments.Exited += (_, result) => exited.TrySetResult(result);
+
+                var result = processArguments.StartAndWaitForExit();
+
+                Assert.That(exited.Task.Wait(5000), Is.True);
+                Assert.That(exited.Task.Result, Is.SameAs(result));
+            }
+        }
+
+        [Test, CancelAfter(10000)]
+        public async Task ExitedHandlerCanUseItsInstance()
+        {
+            var processArguments = GetWaitingProcessArguments("lines", "1");
+            var started = new TaskCompletionSource<IProcessInstance>();
+            var exitCodes = new[] { -1, -1, -1 };
+            processArguments.Exited += (_, _) =>
+            {
+                var self = started.Task.Result;
+                exitCodes[0] = self.WaitForExit().ExitCode;
+                exitCodes[1] = self.Kill().ExitCode;
+                exitCodes[2] = self.WaitForExitAsync().GetAwaiter().GetResult().ExitCode;
+            };
+
+            using var instance = processArguments.Start();
+            started.SetResult(instance);
+            await instance.WaitForExitAsync();
+
+            Assert.That(exitCodes, Is.EqualTo(new[] { 0, 0, 0 }));
+        }
+
+        [Test, CancelAfter(15000)]
+        public async Task KillReturnsTheExitCodeOfTheKilledProcess()
+        {
+            using var instance = GetWaitingProcessArguments().Start();
+            await Task.Delay(100);
+
+            var result = instance.Kill();
+
+            Assert.That(result.ExitCode, Is.Not.EqualTo(0).And.Not.EqualTo(-100));
+        }
+
+        [Test, CancelAfter(15000)]
+        public async Task CancellationReturnsPromptlyWhenTheKilledTreeHeldTheOutputPipe()
+        {
+            var processArguments = GetWaitingProcessArguments("child", "20000", "wait");
+            processArguments.KillEntireProcessTree = true;
+            using var instance = processArguments.Start();
+            using var cancel = new CancellationTokenSource(500);
+            var stopwatch = Stopwatch.StartNew();
+
+            var result = await instance.WaitForExitAsync(cancel.Token);
+
+            Assert.That(result.ExitCode, Is.Not.EqualTo(0));
+            Assert.That(stopwatch.Elapsed, Is.LessThan(TimeSpan.FromSeconds(4)));
+        }
+
+        [Test, CancelAfter(30000)]
+        public async Task CancellationIsBoundedWhenAChildHoldsTheOutputPipe()
+        {
+            using var instance = GetWaitingProcessArguments("child", "20000", "wait").Start();
+            using var cancel = new CancellationTokenSource(500);
+            var stopwatch = Stopwatch.StartNew();
+
+            var result = await instance.WaitForExitAsync(cancel.Token);
+
+            Assert.That(result.ExitCode, Is.Not.EqualTo(0));
+            Assert.That(stopwatch.Elapsed, Is.LessThan(TimeSpan.FromSeconds(10)));
+        }
+
+        [Test, CancelAfter(30000)]
+        public async Task CancellationIsBoundedWhenAnOrphanedChildHoldsTheOutputPipe()
+        {
+            using var instance = GetWaitingProcessArguments("child", "20000").Start();
+            using var cancel = new CancellationTokenSource(500);
+            var stopwatch = Stopwatch.StartNew();
+
+            await instance.WaitForExitAsync(cancel.Token);
+
+            Assert.That(stopwatch.Elapsed, Is.LessThan(TimeSpan.FromSeconds(10)));
+        }
+
+        [Test, CancelAfter(10000)]
+        public async Task CloseInputEndsAReaderOfStandardInput()
+        {
+            using var instance = GetWaitingProcessArguments("echo-stdin").Start();
+            await instance.SendInputAsync("abc\n");
+            instance.CloseInput();
+            instance.CloseInput();
+
+            var result = await instance.WaitForExitAsync();
+
+            Assert.That(result.ExitCode, Is.EqualTo(0));
+            Assert.That(result.OutputData, Is.EqualTo(new[] { "abc" }));
+            Assert.Throws<InvalidOperationException>(() => instance.SendInput("x"));
+        }
+
+        [Test, CancelAfter(10000)]
+        public void ThrowingDataHandlerFaultsTheWait()
+        {
+            var processArguments = GetWaitingProcessArguments("lines", "3");
+            var exited = false;
+            processArguments.OutputDataReceived += (_, line) => throw new InvalidOperationException(line);
+            processArguments.Exited += (_, _) => exited = true;
+
+            using var instance = processArguments.Start();
+            var exception = Assert.ThrowsAsync<AggregateException>(() => instance.WaitForExitAsync());
+
+            Assert.That(exception!.InnerExceptions.Select(e => e.Message), Is.EqualTo(new[] { "1", "2", "3" }));
+            Assert.That(instance.OutputData, Has.Count.EqualTo(3));
+            Assert.That(exited, Is.True);
+            Assert.Throws<AggregateException>(() => instance.WaitForExit());
+        }
+
+        [Test, CancelAfter(10000)]
+        public void SingleDataHandlerExceptionIsRethrownAsIs()
+        {
+            var processArguments = GetWaitingProcessArguments("lines", "1");
+            processArguments.OutputDataReceived += (_, line) => throw new InvalidOperationException(line);
+
+            using var instance = processArguments.Start();
+
+            Assert.That(() => instance.WaitForExit(), Throws.InvalidOperationException.With.Message.EqualTo("1"));
+        }
+
+        [Test]
+        public void NegativeDataBufferCapacityIsRejected()
+        {
+            var processArguments = GetWaitingProcessArguments();
+
+            Assert.Throws<ArgumentOutOfRangeException>(() => processArguments.DataBufferCapacity = -1);
+        }
+
+        [Test, CancelAfter(10000)]
+        public void DisposedInstanceThrowsTheExceptionsOfVersion3()
+        {
+            var instance = GetWaitingProcessArguments("lines", "1").Start();
+            instance.WaitForExit();
+            instance.Dispose();
+
+            Assert.That(() => instance.WaitForExit(), Throws.TypeOf<InstanceProcessAlreadyExitedException>().With.InnerException.TypeOf<ObjectDisposedException>());
+            Assert.That(() => instance.Kill(), Throws.TypeOf<InstanceProcessAlreadyExitedException>().With.InnerException.TypeOf<ObjectDisposedException>());
+            Assert.Throws<ObjectDisposedException>(() => instance.SendInput("x"));
+            Assert.Throws<ObjectDisposedException>(() => instance.CloseInput());
+            Assert.ThrowsAsync<ObjectDisposedException>(() => instance.WaitForExitAsync());
+        }
+
         [OneTimeSetUp]
         public async Task Prepare()
         {
             await Instance.FinishAsync("dotnet", "publish ../../../../Instances.Tests.WaitingProgram -c Release -o ./waiting-program");
         }
 
-        private static ProcessArguments GetWaitingProcessArguments()
+        private static ProcessArguments GetWaitingProcessArguments(params string[] arguments)
         {
-            return new ProcessArguments("dotnet", "./waiting-program/Instances.Tests.WaitingProgram.dll");
+            return new ProcessArguments("dotnet", string.Join(" ", new[] { "./waiting-program/Instances.Tests.WaitingProgram.dll" }.Concat(arguments)));
         }
     }
 }
