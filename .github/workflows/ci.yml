@@ -7,12 +7,14 @@ on:
     - .github/workflows/ci.yml
     - Instances/**
     - Instances.Tests/**
+    - Instances.Tests.WaitingProgram/**
   pull_request:
     branches: [ main ]
     paths:
     - .github/workflows/ci.yml
     - Instances/**
     - Instances.Tests/**
+    - Instances.Tests.WaitingProgram/**
 
 permissions:
   contents: read

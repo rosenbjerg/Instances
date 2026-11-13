@@ -1,9 +1,9 @@
 # Instances
-A .NET Standard `Process` wrapper with an elegant API, for both asyncronous and syncronous use, providing both Events and support for Tasks with cancellation support
+A .NET `Process` wrapper with an elegant API, for both asynchronous and synchronous use, providing both Events and support for Tasks with cancellation support
  
 ![.NET Core](https://github.com/rosenbjerg/Instances/workflows/CI/badge.svg)
-[![codecov.io](https://codecov.io/github/rosenbjerg/agentdeploy/coverage.svg?branch=main)](https://app.codecov.io/gh/rosenbjerg/Instances)
-[![GitHub](https://img.shields.io/github/license/rosenbjerg/Instances)](https://github.com/rosenbjerg/Instances/blob/master/LICENSE)
+[![codecov.io](https://codecov.io/github/rosenbjerg/Instances/coverage.svg?branch=main)](https://app.codecov.io/gh/rosenbjerg/Instances)
+[![GitHub](https://img.shields.io/github/license/rosenbjerg/Instances)](https://github.com/rosenbjerg/Instances/blob/main/LICENSE)
 [![Nuget](https://img.shields.io/nuget/v/instances)](https://www.nuget.org/packages/instances/)
 [![Nuget](https://img.shields.io/nuget/dt/instances)](https://www.nuget.org/packages/instances/)
 ![Dependent repos (via libraries.io)](https://img.shields.io/librariesio/dependent-repos/nuget/instances)
@@ -77,3 +77,4 @@ Console.WriteLine(result.OutputData.Count);
 - `Kill()` waits for the process to exit and returns its exit code with the output read so far.
 - An exception thrown by an `OutputDataReceived` or `ErrorDataReceived` handler does not stop the reading of the output: `WaitForExit` and `WaitForExitAsync` rethrow it, or an `AggregateException` when several handlers failed.
 - `DataBufferCapacity` keeps the last lines of each stream and cannot be negative.
+- `Start()` sets `UseShellExecute` to `false`, `CreateNoWindow` to `true` and redirects standard input, output and error on the `ProcessStartInfo` it is given, whatever they were set to.
