@@ -483,7 +483,7 @@ namespace Instances.Tests
         [Test, CancelAfter(15000)]
         public async Task CancellationReturnsPromptlyWhenTheKilledTreeHeldTheOutputPipe()
         {
-            var processArguments = GetWaitingProcessArguments("child", "20000", "wait");
+            var processArguments = GetWaitingProcessArguments("child", "10000", "wait");
             processArguments.KillEntireProcessTree = true;
             using var instance = processArguments.Start();
             using var cancel = new CancellationTokenSource(500);
@@ -498,26 +498,26 @@ namespace Instances.Tests
         [Test, CancelAfter(30000)]
         public async Task CancellationIsBoundedWhenAChildHoldsTheOutputPipe()
         {
-            using var instance = GetWaitingProcessArguments("child", "20000", "wait").Start();
+            using var instance = GetWaitingProcessArguments("child", "10000", "wait").Start();
             using var cancel = new CancellationTokenSource(500);
             var stopwatch = Stopwatch.StartNew();
 
             var result = await instance.WaitForExitAsync(cancel.Token);
 
             Assert.That(result.ExitCode, Is.Not.EqualTo(0));
-            Assert.That(stopwatch.Elapsed, Is.LessThan(TimeSpan.FromSeconds(10)));
+            Assert.That(stopwatch.Elapsed, Is.GreaterThan(TimeSpan.FromSeconds(4)).And.LessThan(TimeSpan.FromSeconds(8)));
         }
 
         [Test, CancelAfter(30000)]
         public async Task CancellationIsBoundedWhenAnOrphanedChildHoldsTheOutputPipe()
         {
-            using var instance = GetWaitingProcessArguments("child", "20000").Start();
+            using var instance = GetWaitingProcessArguments("child", "10000").Start();
             using var cancel = new CancellationTokenSource(500);
             var stopwatch = Stopwatch.StartNew();
 
             await instance.WaitForExitAsync(cancel.Token);
 
-            Assert.That(stopwatch.Elapsed, Is.LessThan(TimeSpan.FromSeconds(10)));
+            Assert.That(stopwatch.Elapsed, Is.GreaterThan(TimeSpan.FromSeconds(4)).And.LessThan(TimeSpan.FromSeconds(8)));
         }
 
         [Test, CancelAfter(10000)]
