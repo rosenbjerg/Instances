@@ -19,6 +19,7 @@ namespace Instances
 
         private readonly bool _ignoreEmptyLines;
         private readonly int _dataBufferCapacity;
+        private readonly bool _killEntireProcessTree;
         private readonly Process _process;
         private readonly TaskCompletionSource<IProcessResult> _completion = new TaskCompletionSource<IProcessResult>(TaskCreationOptions.RunContinuationsAsynchronously);
         private readonly TaskCompletionSource<bool> _stdoutTask = new TaskCompletionSource<bool>();
@@ -32,7 +33,7 @@ namespace Instances
         private volatile bool _disposed;
         private bool _inputClosed;
 
-        internal ProcessInstance(Process process, bool ignoreEmptyLines, int dataBufferCapacity)
+        internal ProcessInstance(Process process, bool ignoreEmptyLines, int dataBufferCapacity, bool killEntireProcessTree)
         {
             process.OutputDataReceived += ReceiveOutput;
             process.ErrorDataReceived += ReceiveError;
@@ -41,6 +42,7 @@ namespace Instances
             _process = process;
             _ignoreEmptyLines = ignoreEmptyLines;
             _dataBufferCapacity = dataBufferCapacity;
+            _killEntireProcessTree = killEntireProcessTree;
         }
 
         public IReadOnlyCollection<string> OutputData => Array.AsReadOnly(Snapshot(_outputData));
@@ -143,6 +145,19 @@ namespace Instances
 
         private void KillProcess()
         {
+#if NET5_0_OR_GREATER
+            if (_killEntireProcessTree)
+            {
+                try
+                {
+                    _process.Kill(entireProcessTree: true);
+                    return;
+                }
+                catch (AggregateException)
+                {
+                }
+            }
+#endif
             try
             {
                 _process.Kill();
