@@ -7,7 +7,7 @@
         <PackageId>Instances</PackageId>
         <Title>Instances</Title>
         <Authors>Malte Rosenbjerg</Authors>
-        <Description>A .NET Standard Process wrapper with an elegant API, for both asyncronous and syncronous use, providing both Events and support for Tasks with cancellation support</Description>
+        <Description>A .NET Process wrapper with an elegant API, for both asynchronous and synchronous use, providing both Events and support for Tasks with cancellation support</Description>
         <Copyright>Rosenbjerg Softworks</Copyright>
         <PackageProjectUrl>https://github.com/rosenbjerg/Instances</PackageProjectUrl>
         <PackageTags>instances instance process async task events run exec</PackageTags>
